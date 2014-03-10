@@ -306,6 +306,7 @@ def configure(conf):
     conf.check_tool('gnu_dirs')
 
     env = conf.env
+    conf.env.append_value ("INCLUDES", ['/home/chuan/sumo-0.18.0/src'])
 
     if Options.options.enable_gcov:
         env['GCOV_ENABLED'] = True

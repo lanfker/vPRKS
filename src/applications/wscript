@@ -3,6 +3,7 @@
 def build(bld):
     module = bld.create_ns3_module('applications', ['internet', 'config-store', 'tools'])
     module.source = [
+        'model/traci-application.cc',
         'model/bulk-send-application.cc',
         'model/onoff-application.cc',
         'model/packet-sink.cc',
@@ -35,6 +36,7 @@ def build(bld):
     headers = bld.new_task_gen(features=['ns3header'])
     headers.module = 'applications'
     headers.source = [
+        'model/traci-application.h',
         'model/bulk-send-application.h',
         'model/onoff-application.h',
         'model/packet-sink.h',
