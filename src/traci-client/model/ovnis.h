@@ -56,7 +56,7 @@
 
 /// The system path where the SUMO executable is located
 #ifndef SUMO_PATH
-#define SUMO_PATH "/home/user/SUMO/sumo/bin/sumo"
+#define SUMO_PATH "/usr/local/bin/sumo"
 #endif
 
 #ifndef SUMO_HOST
@@ -122,7 +122,7 @@ namespace ns3
     DoDispose(void);
 
     virtual void
-    DoInitialize(void);
+    DoStart(void);
 
     void
     initializeNetwork();

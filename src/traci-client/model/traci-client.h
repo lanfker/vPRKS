@@ -11,7 +11,7 @@
 //#include "TraCIAPI.h"  // added 2013-12-06 Fri 02:01 PM
 
 #include "ns3/core-module.h"
-#include "ns3/network-module.h"
+//#include "ns3/network-module.h"
 
 #include "ns3/object.h"
 
@@ -66,6 +66,7 @@ namespace ns3
 
     TraciClient();
 
+    virtual
     ~TraciClient();
     // -----------------------------------------------------------------------------------------------------------------
     //                                                API RE-WRITE

@@ -43,6 +43,7 @@ namespace ns3
   void TraciApplication::StateInfoFetch ()
   {
     //std::cout<<"stop time: "<< m_stopTime<< std::endl;
+    std::cout<<" Fetching state information"<< std::endl;
     if (Simulator::Now () >= m_stopTime)
     {
       return;
@@ -86,14 +87,14 @@ namespace ns3
 
   void TraciApplication::StartApplication (void)
   {
-    //std::cout<<" starting traci-application" << std::endl;
+    std::cout<<" starting traci-application" << std::endl;
     traciClient = Names::Find<TraciClient>("TraciClient");
     Ptr<Object> object = GetNode ();
     mobilityModel = object->GetObject<ConstantVelocityMobilityModel> ();
     m_name = Names::FindName (GetNode ());
     traciClient->getStringList (CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
     m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
-    //std::cout<<" node name: "<< m_name << std::endl;
+    std::cout<<" node name: "<< m_name << std::endl;
   }
   void TraciApplication::StopApplication (void)
   {

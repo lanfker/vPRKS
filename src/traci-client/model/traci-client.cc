@@ -291,6 +291,7 @@ namespace ns3
       send_commandSimulationStep(targetTime);
       NS_LOG_DEBUG (" simulation step time: "<< targetTime<<endl);
       tcpip::Storage inMsg;
+      socket.receiveExact (inMsg);
       try 
       {
         std::string acknowledgement;
@@ -1889,7 +1890,7 @@ void TraciClient::send_commandSimulationStep(int time)
 void
 TraciClient::check_resultState(tcpip::Storage& inMsg, int command, bool ignoreCommandId, std::string* acknowledgement) 
 {
-    socket.receiveExact(inMsg);
+    //socket.receiveExact(inMsg);
     int cmdLength;
     int cmdId;
     int resultType;

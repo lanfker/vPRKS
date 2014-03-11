@@ -59,6 +59,7 @@ public:
   virtual Ptr<NetDevice> GetDevice (uint32_t i) const;
 
   void Add (Ptr<YansWifiPhy> phy);
+  void Remove (Ptr<YansWifiPhy> ywp);
 
   /**
    * \param loss the new propagation loss model.

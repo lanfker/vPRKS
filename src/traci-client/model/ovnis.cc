@@ -100,7 +100,7 @@ namespace ns3
   }
 
   void
-  Ovnis::DoInitialize(void)
+  Ovnis::DoStart(void)
   {
     NS_LOG_FUNCTION(Simulator::Now().GetSeconds());
     Names::Add("Ovnis", this);
@@ -154,19 +154,22 @@ namespace ns3
     traciClient = CreateObject<TraciClient> ();
     Names::Add("TraciClient", traciClient);
 
+    std::cout<<"Connecting to sumo with host: "<<sumoHost << " port: "<< port << std::endl;
     traciClient->connect(sumoHost, port);
-    //std::cout<<" sumoConfig: "<< sumoConfig <<" port: "<< port << std::endl;
+    std::cout<<" sumoConfig: "<< sumoConfig <<" port: "<< port << std::endl;
 
     // submissions : started, stopped
     traciClient->submission(startTime*1000, stopTime*1000);
+    std::cout<<" sumbitted"<< std::endl;
 
     // First run. Reaches the startTime
     traciClient->simulationStep(startTime*1000, currentTime, in, out);
+    std::cout<<" simulation step!"<< std::endl;
 
     //application
     m_application_factory.SetTypeId(m_application);
     m_application_factory.Set ("ApplicationStopTime", TimeValue (Seconds(stopTime)));
-    //std::cout<<" application: "<< m_application<< std::endl;     // is ns3::TraciApplication
+    std::cout<<" application: "<< m_application<< std::endl;     // is ns3::TraciApplication
 
     // Initialize ns-3 devices
     initializeNetwork();
@@ -174,7 +177,7 @@ namespace ns3
 
     Simulator::Schedule(Seconds(0), &Ovnis::run, this);
 
-    Object::DoInitialize();
+    Object::DoStart ();
   }
 
   std::string
@@ -495,7 +498,7 @@ namespace ns3
   {
     NS_LOG_FUNCTION(Simulator::Now().GetSeconds());
 
-    Ovnis::Initialize ();
+    Ovnis::Start ();
 
     if (currentTime < (stopTime*1000))
     {

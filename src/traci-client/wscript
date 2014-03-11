@@ -7,34 +7,36 @@
 #     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
 
 def build(bld):
-  module = bld.create_ns3_module('traci-client', ['core'])
+  module = bld.create_ns3_module('traci-client', ['core', 'network', 'wifi'])
   module.source = [
-  'model/traci-client.cc',
-  'model/ovnis.cc',
-  'model/xml-sumo-conf-parser.cc',
-#'helper/traci-client-helper.cc',
-  ]
+    'model/traci-client.cc',
+    'model/ovnis.cc',
+    'model/xml-sumo-conf-parser.cc',
+    'helper/traci-client-helper.cc',
+    ]
 
   module_test = bld.create_ns3_module_test_library('traci-client')
   module_test.source = [
 #'test/traci-client-test-suite.cc',
-  ]
+    ]
 
   headers = bld(features='ns3header')
   headers.module = 'traci-client'
   headers.source = [
-  'model/traci-client.h',
-  'model/xml-sumo-conf-parser.h',
-  'model/ovnis.h',
-#'helper/traci-client-helper.h',
-  ]
+    'model/traci-client.h',
+    'model/xml-sumo-conf-parser.h',
+    'model/ovnis.h',
+    'helper/traci-client-helper.h',
+    ]
 
   if bld.env.ENABLE_EXAMPLES:
     bld.recurse('examples')
+  bld.env.append_value ("LINKFLAGS", ["-lxerces-c"])
 
 # bld.ns3_python_bindings()
 
-  module.env.append_value ("LINKFLAGS", ["-L../src/traci-client/model/lib"])
+  module.env.append_value ("LINKFLAGS", ["-L../src/traci-client/model/lib/"])
   module.env.append_value ("LIB", ["tcpip"])
   module.env.append_value ("LIB", ["traci"])
-  module.env.append_value ("LIB", ["xerces-c"])
+#module.env.append_value ("LINKFLAGS", ["-L/usr/lib/"])
+#module.env.append_value ("LIB", ["xerces-c"])

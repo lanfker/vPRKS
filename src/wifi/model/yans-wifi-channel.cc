@@ -138,4 +138,13 @@ YansWifiChannel::Add (Ptr<YansWifiPhy> phy)
   m_phyList.push_back (phy);
 }
 
+void YansWifiChannel::Remove (Ptr<YansWifiPhy> ywp)
+{
+  PhyList::iterator i = std::find (m_phyList.begin (), m_phyList.end (), ywp );
+  if (i != m_phyList.end ())
+  {
+    m_phyList.erase (i);
+  }
+}
+
 } // namespace ns3
