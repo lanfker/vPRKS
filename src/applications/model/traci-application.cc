@@ -14,6 +14,7 @@
 #include <traci-server/TraCIConstants.h>
 #include "ns3/mobility-module.h"
 #include "ns3/traci-client-module.h"
+#include "ns3/physim-wifi-module.h"
 
 
 NS_LOG_COMPONENT_DEFINE ("TraciApplication");
@@ -87,7 +88,7 @@ namespace ns3
 
   void TraciApplication::StartApplication (void)
   {
-    std::cout<<" starting traci-application" << std::endl;
+    //std::cout<<" starting traci-application" << std::endl;
     traciClient = Names::Find<TraciClient>("TraciClient");
     Ptr<Object> object = GetNode ();
     mobilityModel = object->GetObject<ConstantVelocityMobilityModel> ();
@@ -95,8 +96,27 @@ namespace ns3
     traciClient->getStringList (CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
     m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
     std::cout<<" node name: "<< m_name << std::endl;
+    m_nextEventId = Simulator::Schedule (MilliSeconds (PAKCET_GENERATION_INTERVAL), &TraciApplication::GenerateTraffic, this);
   }
   void TraciApplication::StopApplication (void)
   {
+    m_stopTime = Seconds (0);
+  }
+
+  void TraciApplication::GenerateTraffic ()
+  {
+    // need to stop application, terminate simulation
+    if ( m_stopTime <= Simulator::Now ())
+    {
+      return;
+    }
+
+    Ptr<AdhocWifiMac> mac = GetNode ()->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac ()->GetObject<AdhocWifiMac> ();
+    Ptr<PhySimWifiPhy> phy = GetNode ()->GetDevice(DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetPhy ()->GetObject<PhySimWifiPhy> ();
+
+    Mac48Address addr1 = Mac48Address::GetBroadcast ();
+    Ptr<Packet> pkt = Create<Packet> (DEFAULT_PACKET_LENGTH);
+    mac->Enqueue (pkt, addr1);
+    m_nextEventId = Simulator::Schedule (MilliSeconds (PAKCET_GENERATION_INTERVAL), &TraciApplication::GenerateTraffic, this);
   }
 }

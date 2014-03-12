@@ -31,6 +31,7 @@
 // ----- NS-3 related includes
 #include <ns3/object.h>
 #include "ns3/traci-client-module.h"
+#include "ns3/physim-wifi-module.h"
 
 #include "ns3/wifi-module.h"
 #include "ns3/core-module.h"
@@ -192,15 +193,15 @@ namespace ns3
     NodeContainer node_container;
 
     // network
-    YansWifiPhyHelper phy;
+    PhySimWifiPhyHelper phy;
     NqosWifiMacHelper mac;
-    YansWifiChannelHelper wifiChannel;
+    PhySimWifiChannelHelper wifiChannel;
     WifiHelper wifi;
-    Ipv4AddressHelper address;
+    //Ipv4AddressHelper address;
     /**
      * the channel used by all devices
      */
-    Ptr<YansWifiChannel> channel;
+    Ptr<PhySimWifiChannel> channel;
 
     /**
      * name of the application to be installed on devices

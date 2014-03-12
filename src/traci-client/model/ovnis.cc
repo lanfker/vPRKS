@@ -27,6 +27,7 @@
 #include <time.h>
 //
 // ----- NS-3 related includes
+#include "ns3/physim-wifi-module.h"
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/wifi-helper.h"
@@ -114,6 +115,8 @@ namespace ns3
 
 
     // Start SUMO ?
+    // If our simulation script indicate the local machine has sumo installed, and configuration files are copied to ns3/scratch
+    // we can run SUMO locally. By providing a boolean value (true) to \param startSumo.
     if (startSumo)
     {
 //      sumoHost = "localhost";
@@ -154,28 +157,32 @@ namespace ns3
     traciClient = CreateObject<TraciClient> ();
     Names::Add("TraciClient", traciClient);
 
-    std::cout<<"Connecting to sumo with host: "<<sumoHost << " port: "<< port << std::endl;
+    //std::cout<<"Connecting to sumo with host: "<<sumoHost << " port: "<< port << std::endl;
     traciClient->connect(sumoHost, port);
-    std::cout<<" sumoConfig: "<< sumoConfig <<" port: "<< port << std::endl;
+    //std::cout<<" sumoConfig: "<< sumoConfig <<" port: "<< port << std::endl;
 
     // submissions : started, stopped
     traciClient->submission(startTime*1000, stopTime*1000);
-    std::cout<<" sumbitted"<< std::endl;
+    //std::cout<<" sumbitted"<< std::endl;
 
     // First run. Reaches the startTime
     traciClient->simulationStep(startTime*1000, currentTime, in, out);
-    std::cout<<" simulation step!"<< std::endl;
+    //std::cout<<" simulation step!"<< std::endl;
 
     //application
     m_application_factory.SetTypeId(m_application);
     m_application_factory.Set ("ApplicationStopTime", TimeValue (Seconds(stopTime)));
-    std::cout<<" application: "<< m_application<< std::endl;     // is ns3::TraciApplication
+    //std::cout<<" application: "<< m_application<< std::endl;     // is ns3::TraciApplication
 
     // Initialize ns-3 devices
+    // will not use Ipv4 networks
     initializeNetwork();
+
+    //For vehicles that have just departed, include them in our simulation
+    //For vehicles that have just arrived, exclude them from out simulation
     updateInOutVehicles();
 
-    Simulator::Schedule(Seconds(0), &Ovnis::run, this);
+    //Simulator::Schedule(Seconds(0), &Ovnis::run, this);
 
     Object::DoStart ();
   }
@@ -199,10 +206,13 @@ namespace ns3
   {
     NetDeviceContainer devices = wifi.Install(phy, mac, node_container);
 
+    // We do not need Ipv4 in our vPRKS simulation
+    /*
     InternetStackHelper stack;
     stack.Install(node_container);
     Ipv4InterfaceContainer wifiInterfaces;
     wifiInterfaces = address.Assign(devices);
+    */
   }
 
   void
@@ -213,12 +223,15 @@ namespace ns3
     {
 
       Ptr<Node> n = (*i);
+      /*
+       * do not need Ipv4
       Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
       for (uint32_t j = 0; j < n->GetNDevices(); ++j)
       {
         int32_t ifIndex = ipv4->GetInterfaceForDevice(n->GetDevice(j));
         ipv4->SetDown(ifIndex);
       }
+      */
       for (uint32_t i = 0; i < n->GetNApplications(); ++i)
       {
         n->GetApplication(i)->SetStopTime(Simulator::Now());
@@ -227,7 +240,7 @@ namespace ns3
       Ptr<NetDevice> d = n->GetDevice(0);
       Ptr<WifiNetDevice> wd = DynamicCast<WifiNetDevice>(d);
       Ptr<WifiPhy> wp = wd->GetPhy();
-      Ptr<YansWifiPhy> ywp = DynamicCast<YansWifiPhy>(wp);
+      Ptr<PhySimWifiPhy> ywp = DynamicCast<PhySimWifiPhy>(wp);
       channel->Remove(ywp);
     }
   }
@@ -327,11 +340,12 @@ namespace ns3
   {
     NS_LOG_FUNCTION_NOARGS();
 
-    phy = YansWifiPhyHelper::Default();
+    phy = PhySimWifiPhyHelper::Default();
     ObjectFactory factory1;
-    channel = CreateObject<YansWifiChannel> ();
-    factory1.SetTypeId("ns3::LogDistancePropagationLossModel");
-    channel->SetPropagationLossModel(factory1.Create<PropagationLossModel> ());
+    channel = CreateObject<PhySimWifiUniformChannel> ();
+ 
+    factory1.SetTypeId("ns3::PhySimVehicularChannelPropagationLoss");
+    channel->SetPropagationLossModel(factory1.Create<PhySimPropagationLossModel> ());
     ObjectFactory factory2;
     factory2.SetTypeId("ns3::ConstantSpeedPropagationDelayModel");
     channel->SetPropagationDelayModel(factory2.Create<PropagationDelayModel> ());
@@ -345,9 +359,9 @@ namespace ns3
     NS_LOG_FUNCTION_NOARGS();
 
     wifi = WifiHelper::Default();
-    wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
-    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate54Mbps"));
-    address.SetBase("10.0.0.0", "255.0.0.0");
+    wifi.SetStandard(WIFI_PHY_STANDARD_80211p_SCH);
+    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate6Mbps"));
+    //address.SetBase("10.0.0.0", "255.0.0.0");
     mac = NqosWifiMacHelper::Default();
     mac.SetType("ns3::AdhocWifiMac");
 
@@ -494,7 +508,7 @@ namespace ns3
   }
 
   void
-  Ovnis::run()
+  Ovnis::run ()
   {
     NS_LOG_FUNCTION(Simulator::Now().GetSeconds());
 

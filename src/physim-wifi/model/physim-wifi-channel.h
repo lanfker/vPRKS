@@ -97,6 +97,8 @@ public:
    */
   virtual void Send (Ptr<PhySimWifiPhy> sender, Ptr<const Packet> packet, Ptr<const PhySimWifiPhyTag> tag) = 0;
 
+  virtual void Remove (Ptr<PhySimWifiPhy> ywp) = 0;
+
 };
 
 /**
@@ -147,6 +149,7 @@ public:
    *               the vector with all the complex time samples
    */
   void Send (Ptr<PhySimWifiPhy> sender, Ptr<const Packet> packet, Ptr<const PhySimWifiPhyTag> tag);
+  void Remove (Ptr<PhySimWifiPhy> ywp);
 
 private:
   typedef std::vector<Ptr<PhySimWifiPhy> > PhyList;
@@ -221,6 +224,7 @@ public:
    *               the vector with all the complex time samples
    */
   void Send (Ptr<PhySimWifiPhy> sender, Ptr<const Packet> packet, Ptr<const PhySimWifiPhyTag> tag);
+  void Remove (Ptr<PhySimWifiPhy> ywp);
 
 private:
   typedef std::vector<Ptr<PhySimWifiPhy> > PhyList;

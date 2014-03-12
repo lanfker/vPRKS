@@ -592,6 +592,7 @@ MacLow::StartTransmission (Ptr<const Packet> packet,
                            MacLowTransmissionParameters params,
                            MacLowTransmissionListener *listener)
 {
+  std::cout<<" sending data packet "<< std::endl;
   NS_LOG_FUNCTION (this << packet << hdr << params << listener);
   /* m_currentPacket is not NULL because someone started
    * a transmission and was interrupted before one of:

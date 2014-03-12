@@ -7,6 +7,8 @@
 #include "ns3/log.h"
 //#include "ovnis.h"
 #include "ns3/simulator.h"
+#include "ns3/wifi-module.h"
+#include "ns3/physim-wifi-module.h"
 
 using namespace std;
 using namespace ns3;
@@ -51,6 +53,7 @@ int main (int argc, char **argv)
       "StartSumo", BooleanValue (startSumo),
       "Application", StringValue ("ns3::TraciApplication")
       );
+
 
   Simulator::Schedule (Seconds (0), &Ovnis::run, sim);
 

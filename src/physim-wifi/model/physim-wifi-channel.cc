@@ -150,6 +150,15 @@ PhySimWifiUniformChannel::Receive (uint32_t i, Ptr<Packet> packet, Ptr<PhySimWif
 }
 
 
+void PhySimWifiUniformChannel::Remove (Ptr<PhySimWifiPhy> ywp)
+{
+  PhyList::iterator i = std::find (m_phyList.begin (), m_phyList.end (), ywp );
+  if (i != m_phyList.end ())
+  {
+    m_phyList.erase (i);
+  }
+}
+
 
 
 
@@ -285,6 +294,15 @@ void
 PhySimWifiManualChannel::Receive (uint32_t i, Ptr<Packet> packet, Ptr<PhySimWifiPhyTag> tag) const
 {
   m_phyList[i]->StartReceivePacket (packet, tag);
+}
+
+void PhySimWifiManualChannel::Remove (Ptr<PhySimWifiPhy> ywp)
+{
+  PhyList::iterator i = std::find (m_phyList.begin (), m_phyList.end (), ywp );
+  if (i != m_phyList.end ())
+  {
+    m_phyList.erase (i);
+  }
 }
 
 } // namespace ns3
