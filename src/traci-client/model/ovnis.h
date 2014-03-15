@@ -42,6 +42,9 @@
 #ifndef PI
 #define PI 3.14159265
 #endif
+#ifndef YANS_WIFI
+//#define YANS_WIFI
+#endif
 
 
 /// interval of time between 2 active decisions about JAMEs
@@ -193,15 +196,21 @@ namespace ns3
     NodeContainer node_container;
 
     // network
+#if !defined (YANS_WIFI)
     PhySimWifiPhyHelper phy;
-    NqosWifiMacHelper mac;
     PhySimWifiChannelHelper wifiChannel;
+    Ptr<PhySimWifiChannel> channel;
+#else
+    YansWifiPhyHelper phy;
+    YansWifiChannelHelper wifiChannel;
+    Ptr<YansWifiChannel> channel;
+#endif
+    NqosWifiMacHelper mac;
     WifiHelper wifi;
     //Ipv4AddressHelper address;
     /**
      * the channel used by all devices
      */
-    Ptr<PhySimWifiChannel> channel;
 
     /**
      * name of the application to be installed on devices

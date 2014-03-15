@@ -41,6 +41,7 @@
 #include "ns3/constant-velocity-mobility-model.h"
 #include "ns3/simulator.h"
 #include "ns3/traci-client.h"
+#include "ns3/road-map-module.h"
 //
 // ----- SUMO related includes
 #include <traci-server/TraCIConstants.h>
@@ -110,9 +111,13 @@ namespace ns3
 
     currentTime = startTime*1000;
 
-    // retrieve SUMO network port number and simulation boundaries from config files.
-    XMLSumoConfParser::parseConfiguration(sumoConfig, &port, boundaries);
 
+
+
+    // retrieve SUMO network port number and simulation boundaries from config files.
+    XMLSumoConfParser::parseConfiguration(sumoConfig); //, &port, boundaries);
+
+    std::cout<<" port in ovnis: " << XMLSumoConfParser::port << std::endl;
 
     // Start SUMO ?
     // If our simulation script indicate the local machine has sumo installed, and configuration files are copied to ns3/scratch
@@ -144,6 +149,14 @@ namespace ns3
       }
     }
 
+    //------------------------------------------------------------------------------------------------
+    NodeXmlParser::ParseNodeXmlFile ("scratch/cross.nod.xml");
+    EdgeXmlParser::ParseEdgeXmlFile ("scratch/cross.edg.xml");
+
+    //------------------------------------------------------------------------------------------------
+
+
+
     /*
      if (fork() == 0)
      {
@@ -158,7 +171,7 @@ namespace ns3
     Names::Add("TraciClient", traciClient);
 
     //std::cout<<"Connecting to sumo with host: "<<sumoHost << " port: "<< port << std::endl;
-    traciClient->connect(sumoHost, port);
+    traciClient->connect(sumoHost, XMLSumoConfParser::port);
     //std::cout<<" sumoConfig: "<< sumoConfig <<" port: "<< port << std::endl;
 
     // submissions : started, stopped
@@ -240,7 +253,11 @@ namespace ns3
       Ptr<NetDevice> d = n->GetDevice(0);
       Ptr<WifiNetDevice> wd = DynamicCast<WifiNetDevice>(d);
       Ptr<WifiPhy> wp = wd->GetPhy();
+#if !defined (YANS_WIFI)
       Ptr<PhySimWifiPhy> ywp = DynamicCast<PhySimWifiPhy>(wp);
+#else
+      Ptr<YansWifiPhy> ywp = DynamicCast<YansWifiPhy>(wp);
+#endif
       channel->Remove(ywp);
     }
   }
@@ -256,7 +273,7 @@ namespace ns3
     {
       vector<string>::iterator it;
       it = std::find(in.begin(), in.end(), (*i));
-      std::cout<<Simulator::Now ()<<" vehicle "<< *i << " removed "<< std::endl;
+      //std::cout<<Simulator::Now ()<<" vehicle "<< *i << " removed "<< std::endl;
       if (it != in.end())
       {
         in.erase(it);
@@ -274,7 +291,7 @@ namespace ns3
     int j = 0;
     for (vector<string>::iterator i = in.begin(); i != in.end(); ++i)
     {
-      std::cout<<Simulator::Now ()<<" vehicle "<< *i << " added "<< std::endl;
+      //std::cout<<Simulator::Now ()<<" vehicle "<< *i << " added "<< std::endl;
       Names::Add("Nodes", (*i), node_container.Get(j));
       ++j;
     }
@@ -339,13 +356,22 @@ namespace ns3
   Ovnis::initializeLowLayersNetwork()
   {
     NS_LOG_FUNCTION_NOARGS();
-
+#if !defined (YANS_WIFI)
     phy = PhySimWifiPhyHelper::Default();
     ObjectFactory factory1;
     channel = CreateObject<PhySimWifiUniformChannel> ();
  
     factory1.SetTypeId("ns3::PhySimVehicularChannelPropagationLoss");
     channel->SetPropagationLossModel(factory1.Create<PhySimPropagationLossModel> ());
+#else
+    phy = YansWifiPhyHelper::Default();
+    ObjectFactory factory1;
+    channel = CreateObject<YansWifiChannel> ();
+ 
+    factory1.SetTypeId("ns3::LogDistancePropagationLossModel");
+    channel->SetPropagationLossModel(factory1.Create<PropagationLossModel> ());
+
+#endif
     ObjectFactory factory2;
     factory2.SetTypeId("ns3::ConstantSpeedPropagationDelayModel");
     channel->SetPropagationDelayModel(factory2.Create<PropagationDelayModel> ());
@@ -412,7 +438,7 @@ namespace ns3
 
     // real loop until stop time
     traciClient->simulationStep(currentTime+1000, currentTime, in, out);
-    std::cout<<"startTime*1000: "<< startTime*1000 <<" currentTime: "<< currentTime << std::endl;
+    //std::cout<<"startTime*1000: "<< startTime*1000 <<" currentTime: "<< currentTime << std::endl;
 
     // update running vehicles
     updateInOutVehicles();
@@ -477,7 +503,7 @@ namespace ns3
 
     for (statType::iterator i = stats.begin(); i != stats.end(); i++)
     {
-      cout << (*i).first << " " << currentTime << " " << (*i).second.sum << " " << (*i).second.inputs << endl;
+      //cout << (*i).first << " " << currentTime << " " << (*i).second.sum << " " << (*i).second.inputs << endl;
       (*i).second.inputs = 0;
       (*i).second.sum = 0;
     }

@@ -28,11 +28,13 @@
 #include <xercesc/sax/EntityResolver.hpp>
 #include <xercesc/sax/ErrorHandler.hpp>
 #include <xercesc/sax/SAXParseException.hpp>
-#include<xercesc/sax2/SAX2XMLReader.hpp>
-#include<xercesc/sax2/DefaultHandler.hpp>
-#include<xercesc/sax2/XMLReaderFactory.hpp>
-#include<xercesc/sax2/Attributes.hpp>
+#include <xercesc/sax2/SAX2XMLReader.hpp>
+#include <xercesc/sax2/DefaultHandler.hpp>
+#include <xercesc/sax2/XMLReaderFactory.hpp>
+#include <xercesc/sax2/Attributes.hpp>
+#include <xercesc/util/PlatformUtils.hpp>
 #include <iostream>
+#include <cstdlib>
 #include <sstream>
 #include <algorithm>
 #include <iterator>
@@ -52,22 +54,24 @@ namespace ns3{
     is_location = false;
     is_port=false;
   }
+  int32_t XMLSumoConfParser::port = 0;
 
   void
     XMLSumoConfParser::startElement(const XMLCh* const uri, const XMLCh* const localname, const XMLCh* const qname,
         const Attributes& attrs)
     {
 
-      char* message = XMLString::transcode(localname);
-      //cerr << "I saw element: " << message << endl;
-      string name(message);
-      if ("net-file" == name)
+      char* name = XMLString::transcode(localname);
+      //cerr << "I saw element: " << name << endl;
+      //string name(message);
+      if (strcmp (name, "net-file") == 0)
       {
 
         XMLCh* q = XMLString::transcode("value");
         char* value = XMLString::transcode(attrs.getValue(q));
         if(value!=NULL){
           net_file_name = string(value);
+          std::cout<<" netfile: "<< net_file_name<<std::endl;
           XMLString::release(&value);
           is_net_file_name = false;
         }
@@ -76,17 +80,19 @@ namespace ns3{
         }
       }
 
-      if("remote-port" == name)
+      if(strcmp (name, "remote-port") == 0)
       {
         is_port=true;
         XMLCh* q = XMLString::transcode("value");
         char* value = XMLString::transcode(attrs.getValue(q));
         if (value != NULL)
         {
-          *port = atoi (value); // port found
+          std::cout<<" port: "<< value <<std::endl;
+          XMLSumoConfParser::port = atoi (value); // port found
         }
       }
-      if ("location" == name)
+      /*
+      if (strcmp (name, "location") == 0)
       {
         XMLCh* q = XMLString::transcode("convBoundary");
         char* b = XMLString::transcode(attrs.getValue(q));
@@ -94,13 +100,14 @@ namespace ns3{
         char * pch;
         pch = strtok(b, ",");
         pch = strtok(NULL, ",");
-        boundaries[0] = atof(strtok(NULL, ","));
-        boundaries[1] = atof(strtok(NULL, ","));
+        //boundaries[0] = atof(strtok(NULL, ","));
+        //boundaries[1] = atof(strtok(NULL, ","));
 
         XMLString::release(&b);
         XMLString::release(&q);
       }
-      XMLString::release(&message);
+      */
+      XMLString::release(&name);
     }
 
   void
@@ -111,33 +118,9 @@ namespace ns3{
       XMLString::release(&message);
     }
 
-  void
-    XMLSumoConfParser::characters(const XMLCh* const xMLCh, const unsigned int xMLSize_t)
-    {
-
-      if (is_net_file_name)
-      {
-        char* message = XMLString::transcode(xMLCh);
-        net_file_name = string(message);
-        XMLString::release(&message);
-        is_net_file_name = false;
-
-      }
-      else
-      {
-        if (is_port)
-        {
-          char* message = XMLString::transcode(xMLCh);
-          (*port)=atoi(message);
-          XMLString::release(&message);
-          is_port = false;
-        }
-      }
-
-    }
 
   void
-    XMLSumoConfParser::parseConfiguration(const string & filename, int * p, double* bound)
+    XMLSumoConfParser::parseConfiguration(const string & filename)
     {
 
       // suppose input is scratch/park05.sumocfg
@@ -158,22 +141,20 @@ namespace ns3{
       //cout<<"port: "<<*p<<endl;
 
       SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-      parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+      parser->setFeature(XMLUni::fgSAX2CoreValidation, false);
       parser->setFeature(XMLUni::fgSAX2CoreNameSpaces, true); // optional
 
       XMLSumoConfParser* defaultHandler = new XMLSumoConfParser();
-      defaultHandler->port = p;
-      defaultHandler->boundaries = bound;
+      //p = defaultHandler->port;
+      //defaultHandler->boundaries = bound;
       parser->setContentHandler(defaultHandler);
       parser->setErrorHandler(defaultHandler);
 
       try
       {
+        cout << "filename:" << filename.c_str ()<< endl;  // sumocfg file
         parser->parse(filename.c_str());
-        //cout << "filename:" << filename.c_str ()<< endl;  // sumocfg file
-        XMLCh* port = XMLString::transcode ("remote-port");
-        //p = (int*)parser->getProperty (port);
-        //cout<<"port: "<<*(defaultHandler->port)<<endl;
+
 
         parser->parse((base + "/" + defaultHandler->net_file_name).c_str());
         //cout << "filename2:" << (base + "/" + defaultHandler->net_file_name).c_str()<< endl;  // net.xml file
@@ -192,13 +173,22 @@ namespace ns3{
         XMLString::release(&message);
         return;
       }
+      catch (const SAXNotRecognizedException toCatch)
+      {
+        char* message = XMLString::transcode(toCatch.getMessage());
+        cout << "Exception message is: \n" << message << "\n";
+        XMLString::release(&message);
+        return;
+      }
       catch (...)
       {
-        cout << "Unexpected Exception \n";
+        cout << "Unexpected Exception ???\n";
         return;
       }
 
       delete parser;
       delete defaultHandler;
+      XMLPlatformUtils::Terminate ();
+
     }
 }

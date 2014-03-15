@@ -63,19 +63,15 @@ namespace ns3
       void
         fatalError(const SAXParseException&);
 
-      void characters(const   XMLCh* const
-          ,const   unsigned int);
-      // void characters(const   XMLCh* const
-      //                                        ,const  XMLSize_t);
 
 
-      static void parseConfiguration(const string & filename, int * port, double* boundaries);
+      static void parseConfiguration(const string & filename);
 
 
 
       std::string net_file_name;
-      int * port;
-      double * boundaries;
+      static int32_t port;
+      //double * boundaries;
 
       bool is_location;
       bool is_net_file_name;
