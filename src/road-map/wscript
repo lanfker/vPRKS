@@ -1,0 +1,37 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+# def options(opt):
+#     pass
+
+# def configure(conf):
+#     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
+
+def build(bld):
+    module = bld.create_ns3_module('road-map', ['core'])
+    module.source = [
+        'model/road-map.cc',
+        'model/node-xml-parser.cc',
+        'model/edge-xml-parser.cc',
+        'helper/road-map-helper.cc',
+        ]
+
+    module_test = bld.create_ns3_module_test_library('road-map')
+    module_test.source = [
+        'test/road-map-test-suite.cc',
+        ]
+
+    headers = bld.new_task_gen(features=['ns3header'])
+    headers.module = 'road-map'
+    headers.source = [
+        'model/road-map.h',
+        'model/node-xml-parser.h',
+        'model/edge-xml-parser.h',
+        'helper/road-map-helper.h',
+        ]
+
+    if bld.env.ENABLE_EXAMPLES:
+        bld.add_subdirs('examples')
+    bld.env.append_value ("LINKFLAGS", ["-lxerces-c"])
+
+    # bld.ns3_python_bindings()
+
