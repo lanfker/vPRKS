@@ -43,7 +43,7 @@
 #define PI 3.14159265
 #endif
 #ifndef YANS_WIFI
-//#define YANS_WIFI
+#define YANS_WIFI
 #endif
 
 

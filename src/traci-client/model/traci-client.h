@@ -79,7 +79,7 @@ namespace ns3
     void CommandGetVariableInteger (int domId, int varId, const std::string &objId, int& value, tcpip::Storage* addData=0);
     void CommandGetVariableFloat (int domId, int varId, const std::string &objId, float& value, tcpip::Storage* addData=0);
     void CommandGetVariableDouble (int domId, int varId, const std::string &objId, double& value, tcpip::Storage* addData=0);
-    void commandGetVariablePosition2D (int domId, int varId, const std::string &objId, Position2D value, tcpip::Storage* addData=0);
+    void commandGetVariablePosition2D (int domId, int varId, const std::string &objId, Position2D &value, tcpip::Storage* addData=0);
 
 
     void send_commandSimulationStep(int time);
@@ -169,22 +169,6 @@ namespace ns3
     bool
     readAndReportTypeDependent(tcpip::Storage &, int); // seems to be fine
 
-
-    // use CommandGetVariableStringList instead
-    bool
-    getStringList(u_int8_t dom, u_int8_t cmd, const std::string & node, std::vector<std::string> &);
-
-    // use CommandGetVariableString instead
-    bool
-    getString(u_int8_t dom, u_int8_t cmd, const std::string &, std::string &);
-
-    // use CommandGetVariableFloat instead
-    float
-    getFloat(u_int8_t dom, u_int8_t cmd, const std::string & node);
-
-    // use commandGetVariablePosition2D instead
-    Position2D
-    getPosition2D(std::string &veh);
 
     /**
      * Simulate the crash of a vehicle, setting it's speed to 0 and changing it's color to black.

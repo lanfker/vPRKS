@@ -259,6 +259,12 @@ namespace ns3
       Ptr<YansWifiPhy> ywp = DynamicCast<YansWifiPhy>(wp);
 #endif
       channel->Remove(ywp);
+
+      uint32_t number_of_device = n->GetNDevices ();
+      for (uint32_t i = 0; i < number_of_device; ++ i)
+      {
+        n->GetDevice (i)->Dispose (); // distroy every net device that has been aggregated to the node.
+      }
     }
   }
 
@@ -359,9 +365,10 @@ namespace ns3
 #if !defined (YANS_WIFI)
     phy = PhySimWifiPhyHelper::Default();
     ObjectFactory factory1;
-    channel = CreateObject<PhySimWifiUniformChannel> ();
  
+    channel = CreateObject<PhySimWifiUniformChannel> ();
     factory1.SetTypeId("ns3::PhySimVehicularChannelPropagationLoss");
+    //factory1.SetTypeId("ns3::PhySimConstantPropagationLoss");
     channel->SetPropagationLossModel(factory1.Create<PhySimPropagationLossModel> ());
 #else
     phy = YansWifiPhyHelper::Default();
@@ -403,9 +410,13 @@ namespace ns3
       Ptr<Object> object = node;
       Ptr<ConstantVelocityMobilityModel> model = object->GetObject<ConstantVelocityMobilityModel> ();
 
-      Position2D newPos = traciClient->getPosition2D((*i));
-      float newSpeed = traciClient->getFloat(CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, (*i));
-      float newAngle = traciClient->getFloat(CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, (*i));
+      Position2D newPos;
+
+      traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, (*i), newPos);
+      double  newSpeed;
+      traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, (*i), newSpeed);
+      double newAngle;
+      traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, (*i), newAngle);
 
       Vector velocity(newSpeed * cos((newAngle + 90) * PI / 180.0), newSpeed * sin((newAngle - 90) * PI / 180.0), 0.0);
       Vector position(newPos.x, newPos.y, 0.0);
@@ -452,15 +463,16 @@ namespace ns3
     }
     else
     {
+
       //stop applications
       for (std::vector<std::string>::iterator i = runningVehicles.begin(); i != runningVehicles.end(); ++i)
       {
         Ptr<Node> node = Names::Find<Node>((*i));
-        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4> ();
-        for (uint32_t j = 0; j < node->GetNDevices(); ++j)
+
+        uint32_t number_of_device = node->GetNDevices ();
+        for (uint32_t i = 0; i < number_of_device; ++ i)
         {
-          int32_t ifIndex = ipv4->GetInterfaceForDevice(node->GetDevice(j));
-          ipv4->SetDown(ifIndex);
+          node->GetDevice (i)->Dispose (); // distroy every net device that has been aggregated to the node.
         }
         for (uint32_t i = 0; i < node->GetNApplications(); ++i)
         {

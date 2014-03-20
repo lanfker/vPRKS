@@ -37,6 +37,7 @@ namespace ns3{
       void StateInfoFetch ();
       void GetEdgeInfo ();
       void GenerateTraffic ();
+      bool HostRunning ();
     private:
       virtual void StartApplication (void);
       virtual void StopApplication (void);
@@ -48,7 +49,7 @@ namespace ns3{
       std::vector<std::string> m_route;
       std::string m_name;
       std::string m_edge;
-      float m_maxSpeed;
+      double m_maxSpeed;
       float m_speed;
       EventId m_nextEventId;
   };

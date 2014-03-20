@@ -106,7 +106,7 @@ namespace ns3{
       XMLString::release (&attrName);
       XMLString::release (&value);
       NodeXmlParser::m_mapNodes.push_back (node);
-      std::cout<<"node size: "<< NodeXmlParser::m_mapNodes.size () << std::endl;
+      //std::cout<<"node size: "<< NodeXmlParser::m_mapNodes.size () << std::endl;
     }
     XMLString::release (&name);
   }

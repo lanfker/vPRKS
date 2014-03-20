@@ -18,7 +18,7 @@
 #include "ns3/wifi-module.h"
 
 #ifndef YANS_WIFI
-//#define YANS_WIFI
+#define YANS_WIFI
 #endif
 
 
@@ -48,6 +48,10 @@ namespace ns3
   }
   void TraciApplication::StateInfoFetch ()
   {
+    if (HostRunning () ==  false )
+    {
+      return;
+    }
     //std::cout<<"stop time: "<< m_stopTime<< std::endl;
     //std::cout<<" Fetching state information"<< std::endl;
     if (Simulator::Now () >= m_stopTime)
@@ -58,7 +62,9 @@ namespace ns3
     {
       // ask for my current edge
       std::string new_edge;
-      traciClient ->getString(CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, new_edge);
+
+      std::cout<<"trying to get edge for vehicle: "<<m_name << std::endl;
+      traciClient ->CommandGetVariableString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, new_edge);
       std::cout<<Simulator::Now ()<<" name: " << m_name <<" new edge: "<< new_edge<< std::endl;
       // if I changed edge then I ask for new speed limits
       if (new_edge.empty())
@@ -73,23 +79,27 @@ namespace ns3
       {
         m_edge = new_edge;
         std::string lane;
-        traciClient ->getString(CMD_GET_VEHICLE_VARIABLE, VAR_LANE_ID, m_name, lane);
-        m_maxSpeed = traciClient ->getFloat(CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane);
+        traciClient ->CommandGetVariableString (CMD_GET_VEHICLE_VARIABLE, VAR_LANE_ID, m_name, lane);
+        //traciClient ->getString(CMD_GET_VEHICLE_VARIABLE, VAR_LANE_ID, m_name, lane);
+        std::cout<<Simulator::Now ()<<" name: " << m_name <<" lane: "<< lane<< std::endl;
+
+        traciClient ->CommandGetVariableDouble(CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane, m_maxSpeed);
+        //float hel;
+        //traciClient ->CommandGetVariableFloat(CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane, hel);
         NS_LOG_DEBUG(m_name<<" moving to new edge "<< new_edge<<" lane "<< lane << " max-speed" << m_maxSpeed);
-        //std::cout<<m_name<<" moving to new edge "<< new_edge<<" lane "<< lane << " max-speed" << m_maxSpeed << std::endl;
+
+        std::cout<<m_name<<" moving to new edge "<< new_edge<<" lane "<< lane << " max-speed" << m_maxSpeed << std::endl;
+      }
+      else
+      {
+        Position2D pos;
+        traciClient -> commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, pos,  0);
+        std::cout<<" position for "<<m_name<<" is ("<<pos.x<<", "<<pos.y<<")"<<std::endl;
       }
     }
     m_actionEvent = Simulator::Schedule (Seconds(1), &TraciApplication::StateInfoFetch, this);
   }
 
-  void TraciApplication::GetEdgeInfo ()
-  {
-    traciClient->getString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, m_edge);
-
-    std::string lane;
-    traciClient->getString (CMD_GET_VEHICLE_VARIABLE, VAR_LANE_ID, m_name, lane);
-    m_maxSpeed = traciClient->getFloat (CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane);
-  }
 
   void TraciApplication::StartApplication (void)
   {
@@ -98,7 +108,8 @@ namespace ns3
     Ptr<Object> object = GetNode ();
     mobilityModel = object->GetObject<ConstantVelocityMobilityModel> ();
     m_name = Names::FindName (GetNode ());
-    traciClient->getStringList (CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
+
+    traciClient->commandGetVariableStringList(CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
     m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
     //std::cout<<" node name: "<< m_name << std::endl;
     m_nextEventId = Simulator::Schedule (MilliSeconds (PAKCET_GENERATION_INTERVAL), &TraciApplication::GenerateTraffic, this);
@@ -110,16 +121,17 @@ namespace ns3
 
   void TraciApplication::GenerateTraffic ()
   {
+    
+    if (HostRunning () ==  false )
+    {
+      return;
+    }
     // need to stop application, terminate simulation
     if ( m_stopTime <= Simulator::Now ())
     {
       return;
     }
 
-    if (GetNode () == NULL )
-    {
-      return;
-    }
     Ptr<AdhocWifiMac> mac = GetNode ()->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac ()->GetObject<AdhocWifiMac> ();
     
     /*
@@ -134,4 +146,31 @@ namespace ns3
     mac->Enqueue (pkt, addr1);
     m_nextEventId = Simulator::Schedule (MilliSeconds (PAKCET_GENERATION_INTERVAL), &TraciApplication::GenerateTraffic, this);
   }
+
+  bool TraciApplication::HostRunning ()
+  {
+    if (GetNode () == NULL )
+    {
+      return false;
+    }
+    else
+    {
+      return true;
+    }
+  }
+
+  /*
+  void TraciApplication::GetEdgeInfo ()
+  {
+    traciClient ->CommandGetVariableString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, m_edge);
+    //traciClient->getString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, m_edge);
+
+    std::string lane;
+    traciClient ->CommandGetVariableString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, lane);
+    //traciClient->getString (CMD_GET_VEHICLE_VARIABLE, VAR_LANE_ID, m_name, lane);
+    //m_maxSpeed = traciClient->getFloat (CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane);
+    traciClient ->CommandGetVariableDouble(CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane, m_maxSpeed);
+  }
+  */
+
 }

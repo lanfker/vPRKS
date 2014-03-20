@@ -614,324 +614,7 @@ return true;
 }
 */
 
-  float
-TraciClient::getFloat(u_int8_t dom, u_int8_t cmd, const std::string & node)
-{
-  tcpip::Storage outMsg, inMsg;
-  std::stringstream msg;
-  outMsg.writeUnsignedByte(1 + 1 + 1 + (4 + (int) node.length()));
-  outMsg.writeUnsignedByte(dom);
-  outMsg.writeUnsignedByte(cmd);
-  outMsg.writeString(node);
 
-  // send request message
-  try
-  {
-    socket.sendExact(outMsg);
-  }
-  catch (SocketException &e)
-  {
-    msg << "+++Error while sending command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-  // receive answer message
-  try
-  {
-    socket.receiveExact(inMsg);
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-
-
-  try {
-    //tcpip::Storage inMsg;
-    std::string acknowledgement;
-    check_resultState(inMsg, dom, false, &acknowledgement);
-    NS_LOG_DEBUG (acknowledgement << std::endl);
-  } catch (tcpip::SocketException& e) {
-    NS_LOG_DEBUG (e.what() << std::endl);
-    return false;
-  }
-
-  // validate result state
-  /*
-  if (!reportResultState(inMsg, dom))
-  {
-    return false;
-  }
-  */
-  // validate answer message
-  try
-  {
-    uint32_t respStart = inMsg.position();
-    uint32_t extLength = inMsg.readUnsignedByte();
-    uint32_t respLength = inMsg.readInt();
-    uint32_t cmdId = inMsg.readUnsignedByte();
-    if (cmdId != (dom + 0x10))
-    {
-      NS_LOG_DEBUG( "#Error: received response with command id: " << cmdId << "but expected: " << (int) (dom
-            + 0x10) << endl);
-      return false;
-    }
-    NS_LOG_DEBUG( "  CommandID=" << cmdId);
-    int vId = inMsg.readUnsignedByte();
-    NS_LOG_DEBUG( "  VariableID=" << vId);
-    string oId = inMsg.readString();
-    NS_LOG_DEBUG( "  ObjectID=" << oId);
-    int valueDataType = inMsg.readUnsignedByte();
-    NS_LOG_DEBUG( " valueDataType=" << valueDataType);
-
-    //data should be string list
-    //          readAndReportTypeDependent(inMsg, valueDataType);
-    if (valueDataType == TYPE_FLOAT)
-    {
-      float f = inMsg.readFloat();
-      NS_LOG_DEBUG( " float value:  " <<f<< endl);
-      return f;
-    }
-    else
-    {
-
-      return 0;
-    }
-
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-  return 0;
-
-}
-
-  bool
-TraciClient::getString(u_int8_t dom, u_int8_t cmd, const std::string & node, std::string & value)
-{
-  tcpip::Storage outMsg, inMsg;
-  std::stringstream msg;
-  outMsg.writeUnsignedByte(1 + 1 + 1 + (4 + (int) node.length()));
-  outMsg.writeUnsignedByte(dom);
-  outMsg.writeUnsignedByte(cmd);
-  outMsg.writeString(node);
-  std::cout<<" sending out: "<< " dom: "<< (uint32_t) dom << " cmd: "<< (uint32_t) cmd <<" node: "<< node <<" value: "<< value<< std::endl;
-  // send request message
-
-  if (socket.port() == 0)
-  {
-
-    std::cerr << "Error while sending command: no connection to server";
-    std::flush(std::cerr);
-
-  }
-  try
-  {
-    socket.sendExact(outMsg);
-
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while sending command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-
-  // receive answer message
-  try
-  {
-    socket.receiveExact(inMsg);
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-
-  try {
-    //tcpip::Storage inMsg;
-    std::string acknowledgement;
-    check_resultState(inMsg, dom, false, &acknowledgement);
-    NS_LOG_DEBUG (acknowledgement << std::endl);
-  } catch (tcpip::SocketException& e) {
-    NS_LOG_DEBUG (e.what() << std::endl);
-    return false;
-  }
-  // validate result state
-  /*
-  if (!reportResultState(inMsg, dom))
-  {
-    return false;
-  }
-  */
-
-  // validate answer message
-  try
-  {
-    /*
-       int respStart = inMsg.position();
-       int extLength = inMsg.readUnsignedByte();
-       int respLength = inMsg.readInt();
-       */
-    int length = inMsg.readUnsignedByte ();
-    if (length == 0)
-    {
-      length = inMsg.readInt ();
-    }
-    int cmdId = inMsg.readUnsignedByte();
-    std::cout<<" Length: "<< length <<" cmdId: "<< cmdId <<" dom + 0x10: "<< (dom + 0x10) << std::endl;
-    if (cmdId != (dom + 0x10))
-    {
-      NS_LOG_DEBUG( "#Error: received response with command id: " << cmdId << "but expected: " << (int) (dom
-            + 0x10) << endl);
-      return false;
-    }
-    NS_LOG_DEBUG( "  CommandID=" << cmdId);
-    int vId = inMsg.readUnsignedByte();
-    std::cout<<" receiving: "<< " vid: "<< vId;
-    NS_LOG_DEBUG( "  VariableID=" << vId);
-    string oId = inMsg.readString();
-    std::cout<<" node: "<< oId ;
-    NS_LOG_DEBUG( "  ObjectID=" << oId);
-    int valueDataType = inMsg.readUnsignedByte();
-    NS_LOG_DEBUG( " valueDataType=" << valueDataType);
-    std::cout<<" commandid: "<< cmdId <<" receiving, vid: "<< vId <<" node: "<< oId << " valueDateType: "<< valueDataType << std::endl;
-
-    //data should be string list
-    //          readAndReportTypeDependent(inMsg, valueDataType);
-    if (valueDataType == TYPE_STRING)
-    {
-      value.assign(inMsg.readString());
-      std::cout<<" value: "<< value << std::endl;
-      NS_LOG_DEBUG( " string value:  " <<value<< std::endl);
-      return true;
-    }
-    else
-    {
-
-      return 0;
-    }
-
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-  return 0;
-
-}
-
-  bool
-TraciClient::getStringList(u_int8_t dom, u_int8_t cmd, const std::string & node, std::vector<std::string>& list)
-{
-  tcpip::Storage outMsg, inMsg;
-  std::stringstream msg;
-  outMsg.writeUnsignedByte(1 + 1 + 1 + (4 + (int) node.length()));
-  outMsg.writeUnsignedByte(dom);
-  outMsg.writeUnsignedByte(cmd);
-  outMsg.writeString(node);
-
-  // send request message
-  try
-  {
-    socket.sendExact(outMsg);
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while sending command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-  // receive answer message
-  try
-  {
-    socket.receiveExact(inMsg);
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-  // validate result state
-
-  try {
-    //tcpip::Storage inMsg;
-    std::string acknowledgement;
-    check_resultState(inMsg, dom, false, &acknowledgement);
-    NS_LOG_DEBUG (acknowledgement << std::endl);
-  } catch (tcpip::SocketException& e) {
-    NS_LOG_DEBUG (e.what() << std::endl);
-    return false;
-  }
-  /*
-  if (!reportResultState(inMsg, dom))
-  {
-    return false;
-  }
-  */
-  // validate answer message
-  try
-  {
-    int respStart = inMsg.position();
-    int extLength = inMsg.readUnsignedByte();
-    int respLength = inMsg.readInt();
-    int cmdId = inMsg.readUnsignedByte();
-    if (cmdId != (dom + 0x10))
-    {
-      NS_LOG_DEBUG( "#Error: received response with command id: " << cmdId << "but expected: " << (int) (dom
-            + 0x10) << endl);
-      return false;
-    }
-    NS_LOG_DEBUG( "  CommandID=" << cmdId);
-    int vId = inMsg.readUnsignedByte();
-    NS_LOG_DEBUG( "  VariableID=" << vId);
-    string oId = inMsg.readString();
-    NS_LOG_DEBUG( "  ObjectID=" << oId);
-    int valueDataType = inMsg.readUnsignedByte();
-    NS_LOG_DEBUG( " valueDataType=" << valueDataType);
-
-    //data should be string list
-    //          readAndReportTypeDependent(inMsg, valueDataType);
-    if (valueDataType == TYPE_STRINGLIST)
-    {
-      vector<string> s = inMsg.readStringList();
-      NS_LOG_DEBUG( " string list value: [ " << endl);
-      for (vector<string>::iterator i = s.begin(); i != s.end(); ++i)
-      {
-        if (i != s.begin())
-        {
-          NS_LOG_DEBUG( ", ");
-        }
-        //                          std::cout<<(*i)<<endl;
-        list.push_back((*i));
-        NS_LOG_DEBUG( '"' << *i << '"');
-      }
-      NS_LOG_DEBUG( " ]" << endl);
-    }
-    else
-    {
-
-      return false;
-    }
-
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return false;
-  }
-  return true;
-}
 
   bool
 TraciClient::readAndReportTypeDependent(tcpip::Storage &inMsg, int valueDataType)
@@ -1087,103 +770,6 @@ TraciClient::readAndReportTypeDependent(tcpip::Storage &inMsg, int valueDataType
   return true;
 }
 
-  Position2D
-TraciClient::getPosition2D(std::string &veh)
-
-{
-  Position2D p;
-  tcpip::Storage outMsg, inMsg;
-  std::stringstream msg;
-  if (socket.port() == 0)
-  {
-    msg << "#Error while sending command: no connection to server";
-    errorMsg(msg);
-    return p;
-  }
-  // command length
-  outMsg.writeUnsignedByte(1 + 1 + 1 + 4 + (int) veh.length());
-  // command id
-  outMsg.writeUnsignedByte(CMD_GET_VEHICLE_VARIABLE);
-  // variable id
-  outMsg.writeUnsignedByte(VAR_POSITION);
-  // object id
-  outMsg.writeString(veh);
-
-  // send request message
-  try
-  {
-    socket.sendExact(outMsg);
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while sending command: " << e.what();
-    errorMsg(msg);
-    return p;
-  }
-
-
-  try {
-    //tcpip::Storage inMsg;
-    socket.receiveExact(inMsg);
-    std::string acknowledgement;
-    check_resultState(inMsg, CMD_GET_VEHICLE_VARIABLE, false, &acknowledgement);
-    NS_LOG_DEBUG (acknowledgement << std::endl);
-  } catch (tcpip::SocketException& e) {
-    NS_LOG_DEBUG (e.what() << std::endl);
-    return p;
-  }
-
-  // receive answer message
-  /*
-  try
-  {
-    socket.receiveExact(inMsg);
-    if (!reportResultState(inMsg, CMD_GET_VEHICLE_VARIABLE))
-    {
-      return p;
-    }
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return p;
-  }
-  */
-  // validate result state
-  try
-  {
-    uint32_t respStart = inMsg.position();
-    int extLength = inMsg.readUnsignedByte();
-    int respLength = inMsg.readInt();
-    int cmdId = inMsg.readUnsignedByte();
-    if (cmdId != (CMD_GET_VEHICLE_VARIABLE + 0x10))
-    {
-      NS_LOG_DEBUG( "#Error: received response with command id: " << cmdId
-          << "but expected: " << (int) (CMD_GET_VEHICLE_VARIABLE
-            + 0x10) << endl);
-      return p;
-    }
-    //  VariableID=" <<
-    inMsg.readUnsignedByte();
-    //answerLog << "  ObjectID=" <<
-    inMsg.readString();
-    //int valueDataType =
-    inMsg.readUnsignedByte();
-
-    p.x = inMsg.readFloat();
-    p.y = inMsg.readFloat();
-    //answerLog << xv << "," << yv << endl;
-    return p;
-  }
-  catch (SocketException &e)
-  {
-    msg << "Error while receiving command: " << e.what();
-    errorMsg(msg);
-    return p;
-  }
-
-}
 
 
 // XXXXXXXXXXXXXXXXXXX
@@ -1564,6 +1150,7 @@ void TraciClient::CommandGetVariableString (int domId, int varId, const std::str
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1602,6 +1189,7 @@ void TraciClient::commandGetVariableStringList (int domId, int varId, const std:
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1645,6 +1233,7 @@ void TraciClient::CommandGetVariableUbyte (int domId, int varId, const std::stri
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1684,6 +1273,7 @@ void TraciClient::CommandGetVariableByte (int domId, int varId, const std::strin
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1722,6 +1312,7 @@ void TraciClient::CommandGetVariableInteger (int domId, int varId, const std::st
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1755,11 +1346,12 @@ void TraciClient::CommandGetVariableInteger (int domId, int varId, const std::st
   }
 }
 
-    void TraciClient::commandGetVariablePosition2D (int domId, int varId, const std::string &objId, Position2D value, tcpip::Storage* addData)
+    void TraciClient::commandGetVariablePosition2D (int domId, int varId, const std::string &objId, Position2D &value, tcpip::Storage* addData)
 {
+  tcpip::Storage inMsg;
   send_commandGetVariable (domId, varId, objId, addData);    
 
-  tcpip::Storage inMsg;
+  socket.receiveExact(inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1800,6 +1392,7 @@ void TraciClient::CommandGetVariableFloat (int domId, int varId, const std::stri
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1839,6 +1432,7 @@ void TraciClient::CommandGetVariableDouble (int domId, int varId, const std::str
   send_commandGetVariable (domId, varId, objId, addData);    
 
   tcpip::Storage inMsg;
+  socket.receiveExact (inMsg);
   try {
     std::string acknowledgement;
     check_resultState (inMsg, domId, false, &acknowledgement);
@@ -1904,6 +1498,7 @@ TraciClient::check_resultState(tcpip::Storage& inMsg, int command, bool ignoreCo
             throw tcpip::SocketException("#Error: received status response to command: " + toString(cmdId) + " but expected: " + toString(command));
         }
         resultType = inMsg.readUnsignedByte();
+        //std::cout<<" type is: "<< resultType << std::endl;
         msg = inMsg.readString();
     } catch (std::invalid_argument&) {
         throw tcpip::SocketException("#Error: an exception was thrown while reading result state message");
