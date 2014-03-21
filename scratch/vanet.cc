@@ -28,6 +28,7 @@ int main (int argc, char **argv)
   SeedManager::SetRun (runNumber);
 
   LogComponentEnable ("TraciApplication", LOG_LEVEL_DEBUG);
+  LogComponentEnable ("YansWifiPhy", LOG_LEVEL_DEBUG);
 
   string sumoConfig = "scratch/cross.sumocfg";
   int startTime = 0;
