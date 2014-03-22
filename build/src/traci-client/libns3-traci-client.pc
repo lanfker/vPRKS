@@ -1,0 +1,12 @@
+
+prefix=/usr/local
+libdir=/usr/local/lib
+includedir=/usr/local/include
+
+Name: libns3-traci-client
+Description: ns-3 module ns3-traci-client
+Version: devel
+Libs: -L${libdir} -Wl,-Bdynamic -lns3-traci-client
+Cflags: -I${includedir}
+Requires: libns3-core libns3-network libns3-wifi libns3-physim-wifi libns3-road-map
+

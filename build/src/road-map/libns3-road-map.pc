@@ -1,0 +1,12 @@
+
+prefix=/usr/local
+libdir=/usr/local/lib
+includedir=/usr/local/include
+
+Name: libns3-road-map
+Description: ns-3 module ns3-road-map
+Version: devel
+Libs: -L${libdir} -Wl,-Bdynamic -lns3-road-map
+Cflags: -I${includedir}
+Requires: libns3-core
+

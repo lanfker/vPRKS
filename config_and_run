@@ -1,0 +1,5 @@
+#!/bin/bash
+
+./waf clean
+CXXFLAGS='-W -Wall -g' ./waf configure
+./waf
