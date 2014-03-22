@@ -33,7 +33,7 @@
 #include "wifi-mac-trailer.h"
 #include "qos-utils.h"
 #include "edca-txop-n.h"
-//#include "matrix.h"
+#include "matrix.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
