@@ -315,7 +315,7 @@ namespace ns3
     {
       Ptr<Application> app = m_application_factory.Create<Application>();
       (*i)->AddApplication(app);
-      app->SetStartTime(Seconds(0));
+      app->SetStartTime(Seconds(1.0)); // allow some delay to let possible setup procedures take place
     }
 
     // -------- set 'down' interfaces of terminated vehicles and remove nodes from the channel.

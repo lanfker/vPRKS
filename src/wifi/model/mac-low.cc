@@ -33,8 +33,10 @@
 #include "wifi-mac-trailer.h"
 #include "qos-utils.h"
 #include "edca-txop-n.h"
+//#include "matrix.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
+
 
 #undef NS_LOG_APPEND_CONTEXT
 #define NS_LOG_APPEND_CONTEXT std::clog << "[mac=" << m_self << "] "
@@ -367,6 +369,37 @@ namespace ns3 {
     m_lastNavDuration = Seconds (0);
     m_lastNavStart = Seconds (0);
     m_promisc = false;
+
+    /*
+    Matrix matrix = Matrix (3,3);
+    matrix.SetValue (0,0,1);
+    matrix.SetValue (0,1,2);
+    matrix.SetValue (0,2,-1);
+
+    matrix.SetValue (1,0,3);
+    matrix.SetValue (1,1,4);
+    matrix.SetValue (1,2,-2);
+
+    matrix.SetValue (2,0,5);
+    matrix.SetValue (2,1,-4);
+    matrix.SetValue (2,2,1);
+
+    matrix.ShowMatrix ();
+
+    Matrix inverse = Matrix (3,3);
+    matrix.Inverse (inverse);
+
+    inverse.ShowMatrix ();
+
+    Matrix product = Matrix (3,3);
+    std::cout<<" before "<< std::endl;
+    matrix.ShowMatrix ();
+    inverse.ShowMatrix ();
+    product.ShowMatrix ();
+    matrix.Product (inverse, product);
+    std::cout<<" after "<< std::endl;
+    product.ShowMatrix ();
+    */
   }
 
   MacLow::~MacLow ()
