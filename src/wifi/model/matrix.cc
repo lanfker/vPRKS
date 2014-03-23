@@ -247,4 +247,25 @@ namespace ns3
       }
     }
   }
+
+  bool Matrix::Transpose (Matrix &transposeMatrix)
+  {
+    if ( GetM () == transposeMatrix.GetN () && GetN () == transposeMatrix.GetM ())
+    {
+      for (uint32_t i = 0; i < GetM (); ++ i)
+      {
+        for (uint32_t j = 0; j < GetN (); ++ j)
+        {
+          double _value;
+          this->GetValue (i,j,_value);
+          transposeMatrix.SetValue (j, i, _value);
+        }
+      }
+      return true;
+    }
+    else
+    {
+      return false;
+    }
+  }
 }

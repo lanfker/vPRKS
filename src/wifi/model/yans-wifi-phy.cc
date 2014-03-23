@@ -521,6 +521,7 @@ maybeCcaBusy:
       NotifyMonitorSniffTx (packet, (uint16_t)GetChannelFrequencyMhz (), GetChannelNumber (), dataRate500KbpsUnits, isShortPreamble);
       m_state->SwitchToTx (txDuration, packet, txMode, preamble, txPower);
       m_channel->Send (this, packet, GetPowerDbm (txPower) + m_txGainDb, txMode, preamble);
+      //std::cout<<" txPower: "<< (uint32_t)txPower <<" actualPower: "<< GetPowerDbm (txPower) + m_txGainDb << std::endl;
     }
 
   uint32_t

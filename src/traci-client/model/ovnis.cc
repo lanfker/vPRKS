@@ -383,6 +383,8 @@ namespace ns3
     factory2.SetTypeId("ns3::ConstantSpeedPropagationDelayModel");
     channel->SetPropagationDelayModel(factory2.Create<PropagationDelayModel> ());
     //channel->updateArea(boundaries[0], boundaries[1], communicationRange);
+    phy.Set ("TxPowerStart",  DoubleValue(40));
+    phy.Set ("TxPowerEnd",  DoubleValue(40));
     phy.SetChannel(channel);
 
   }

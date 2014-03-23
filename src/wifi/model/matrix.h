@@ -1,7 +1,4 @@
 //The code of this file is based on code from (http://blog.csdn.net/zmazon/article/details/8241348)
-/* This file is build for testing TraCI such that NS-3 may be work with SUMO cooperatively. 
- * 2013-12-02 Mon 10:20 AM
- */
 
 #ifndef MATRIX_H 
 #define MATRIX_H
@@ -32,13 +29,13 @@ namespace ns3{
       void GetInverseMatrix (Matrix &expandMatrix, Matrix &inverseMatrix);
       void ShowMatrix ();
       void Product (Matrix &inverseMatrix, Matrix &resultMatrix);
+      bool Transpose (Matrix &transposeMatrix);
     private:
       // In our case, _m and _n should be equal
       uint32_t _m;
       uint32_t _n;
       double **_matrix;
   };
-
 
 }
 

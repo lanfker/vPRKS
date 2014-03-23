@@ -1,8 +1,3 @@
-//The code of this file is based on code from (http://blog.csdn.net/zmazon/article/details/8241348)
-/* This file is build for testing TraCI such that NS-3 may be work with SUMO cooperatively. 
- * 2013-12-02 Mon 10:20 AM
- */
-
 #ifndef PAYLOAD_BUFFER_H 
 #define PAYLOAD_BUFFER_H
 

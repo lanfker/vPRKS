@@ -711,7 +711,10 @@ namespace ns3 {
         uint8_t* temp = new uint8_t[packet->GetSize ()];
         packet->CopyData (temp, packet->GetSize ());
         PayloadBuffer buff = PayloadBuffer (temp);
-        std::cout<<" receiving: "<<buff.ReadDouble () <<" "<<buff.ReadDouble () <<" "<< buff.ReadDouble ()<< std::endl;
+        double angle = buff.ReadDouble ();
+        double x = buff.ReadDouble ();
+        double y = buff.ReadDouble ();
+        std::cout<<" receiving: "<<angle <<" "<<x <<" "<< y<< std::endl;
         std::cout<<temp<< std::endl;
 
         delete [] temp;
