@@ -3,6 +3,7 @@
 def build(bld):
     obj = bld.create_ns3_module('wifi', ['network', 'propagation'])
     obj.source = [
+        'model/signal-map.cc',
         'model/observation.cc',
         'model/double-regression.cc',
         'model/matrix.cc',
@@ -82,6 +83,7 @@ def build(bld):
     headers = bld.new_task_gen(features=['ns3header'])
     headers.module = 'wifi'
     headers.source = [
+        'model/signal-map.h',
         'model/observation.h',
         'model/double-regression.h',
         'model/matrix.h',

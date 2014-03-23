@@ -1,2 +1,15 @@
 Question: 
   1. How to get \Phi_i ?????
+
+
+Facts:
+  1. What information a packet has to contain:
+    (a) receive power?? (fill in at receiver side)  since signal map should be constructed in the MAC layer. Double
+    (b) travelling angle. Double
+    (c) current position (x,y). Two double
+
+Thoughts:
+  1. We should not let vehicles send packets with abnormal high transmission power. This means when constructing signal map, we need message exchange.  Use prediction:
+  (a) Only store signal attenuation information if packets are succesfully received. 
+  (b) Use these records to predict path loss netween nearby vehicles that are beyond transmission range.
+  (c) For predicted values, we should not store them in the observation matrix (vectors), only update them in the signal map.
