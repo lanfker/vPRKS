@@ -49,6 +49,9 @@ public:
    */
   Mac48Address (const char *str);
 
+  uint16_t GetNodeId ();
+  std::string ToString ();
+  std::string ToStringWithoutColons ();
   /**
    * \param buffer address in network order
    *

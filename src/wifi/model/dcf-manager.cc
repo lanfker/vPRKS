@@ -369,14 +369,6 @@ namespace ns3 {
   bool
     DcfManager::IsBusy (void) const
     {
-      //Switching busy
-      std::cout<<"now: "<<Simulator::Now () <<" start: "<< m_lastSwitchingStart <<" duration: "<< m_lastSwitchingDuration 
-        <<" sum: "<< m_lastSwitchingStart + m_lastSwitchingDuration << std::endl;
-      if (m_lastSwitchingStart + m_lastSwitchingDuration > Simulator::Now ())
-      {
-        std::cout<<" swithcing busy! man!"<< std::endl;
-        return true;
-      }
       // PHY busy
       if (m_rxing)
       {

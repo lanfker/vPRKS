@@ -9,6 +9,7 @@
 #include "ns3/simulator.h"
 #include "ns3/wifi-module.h"
 #include "ns3/physim-wifi-module.h"
+#include "ns3/network-module.h"
 
 using namespace std;
 using namespace ns3;
@@ -30,6 +31,7 @@ int main (int argc, char **argv)
   LogComponentEnable ("TraciApplication", LOG_LEVEL_DEBUG);
   //LogComponentEnable ("YansWifiPhy", LOG_LEVEL_DEBUG);
 
+  Packet::EnablePrinting ();
   string sumoConfig = "scratch/cross.sumocfg";
   int startTime = 0;
   int stopTime = 3000;

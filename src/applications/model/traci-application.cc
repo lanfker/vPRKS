@@ -131,12 +131,18 @@ namespace ns3
     traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, m_position);
     traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, m_name, m_angle);
 
-    stringstream payload;
-    payload<<m_angle<<m_position.x<<m_position.y; // currently, we only share vehicle angle, position (x,y)
-    Ptr<Packet> pkt = Create<Packet> ((uint8_t *) payload.str ().c_str (), DEFAULT_PACKET_LENGTH);
 
-    //Ptr<Packet> pkt = Create<Packet> (DEFAULT_PACKET_LENGTH);
+    uint8_t * payload = new uint8_t[DEFAULT_PACKET_LENGTH];
+    PayloadBuffer buff = PayloadBuffer (payload);
+    buff.WriteDouble (m_angle);
+    buff.WriteDouble (m_position.x);
+    buff.WriteDouble (m_position.y);
+    std::cout<<"sending: "<<m_angle<<" "<<m_position.x <<" "<< m_position.y << std::endl;
+    std::cout<<payload<< std::endl;
+    Ptr<Packet> pkt = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
+
     mac->Enqueue (pkt, addr1);
+    delete [] payload;
     m_nextEventId = Simulator::Schedule (MilliSeconds (PAKCET_GENERATION_INTERVAL), &TraciApplication::GenerateTraffic, this);
   }
 

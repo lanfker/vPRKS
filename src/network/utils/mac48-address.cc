@@ -221,6 +221,74 @@ Mac48Address Mac48Address::GetMulticast (Ipv6Address addr)
   return etherAddr;
 }
 
+uint16_t Mac48Address::GetNodeId ()
+{
+  uint16_t nodes_bound = 65535;
+  uint16_t id = strtol ( this->ToStringWithoutColons ().c_str (), NULL, 16) % nodes_bound;
+  return id;
+}
+std::string Mac48Address::ToString ()
+{
+  std::string str;
+  for (uint8_t i = 0; i < 6; ++ i)
+  {
+    uint8_t firstByte = 0;
+    uint8_t secondByte = 0;
+    firstByte = m_address[i] / 16;
+    if (firstByte < 10 )
+    {
+      str.append (1, (char)('0'-0 + firstByte));
+    }
+    else if (firstByte >=10 && firstByte <=16)
+    {
+      str.append (1, (char)('a'+firstByte - 10));
+    }
+    secondByte = m_address[i] % 16;
+    if (secondByte < 10 )
+    {
+      str.append (1, (char)('0'-0 + secondByte));
+    }
+    else if (secondByte >= 10 && secondByte <= 16)
+    {
+      str.append (1, (char)('a'+secondByte - 10));
+    }
+    if (i<5)
+    {
+      str.append(1, ':');
+    }
+  }
+  return str;
+}
+std::string Mac48Address::ToStringWithoutColons ()
+{
+  //m_address
+    std::string str;
+  for (uint8_t i = 0; i < 6; ++ i)
+  {
+    uint8_t firstByte = 0;
+    uint8_t secondByte = 0;
+    firstByte = m_address[i] / 16;
+    if (firstByte < 10 )
+    {
+      str.append (1, (char)('0'-0 + firstByte));
+    }
+    else if (firstByte >=10 && firstByte <=16)
+    {
+      str.append (1, (char)('a'+firstByte - 10));
+    }
+    secondByte = m_address[i] % 16;
+    if (secondByte < 10 )
+    {
+      str.append (1, (char)('0'-0 + secondByte));
+    }
+    else if (secondByte >= 10 && secondByte <= 16)
+    {
+      str.append (1, (char)('a'+secondByte - 10));
+    }
+  }
+  return str;
+}
+
 std::ostream& operator<< (std::ostream& os, const Mac48Address & address)
 {
   uint8_t ad[6];

@@ -506,7 +506,7 @@ maybeCcaBusy:
        *    prevent it.
        *  - we are idle
        */
-      std::cout<<" PHY state is: "<<m_state->GetState () << std::endl;
+      //std::cout<<" PHY state is: "<<m_state->GetState () << std::endl;
       NS_ASSERT (!m_state->IsStateTx () && !m_state->IsStateSwitching ());
 
       Time txDuration = CalculateTxDuration (packet->GetSize (), txMode, preamble);

@@ -34,6 +34,7 @@
 #include "qos-utils.h"
 #include "edca-txop-n.h"
 #include "matrix.h"
+#include "payload-buffer.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -706,6 +707,16 @@ namespace ns3 {
       WifiMacHeader hdr;
       packet->RemoveHeader (hdr);
 
+      //-----------------------------------------------------
+        uint8_t* temp = new uint8_t[packet->GetSize ()];
+        packet->CopyData (temp, packet->GetSize ());
+        PayloadBuffer buff = PayloadBuffer (temp);
+        std::cout<<" receiving: "<<buff.ReadDouble () <<" "<<buff.ReadDouble () <<" "<< buff.ReadDouble ()<< std::endl;
+        std::cout<<temp<< std::endl;
+
+        delete [] temp;
+        //---------------------------------------------
+
       bool isPrevNavZero = IsNavZero ();
       NS_LOG_DEBUG ("duration/id=" << hdr.GetDuration ());
       NotifyNav (hdr, txMode, preamble);
@@ -922,6 +933,7 @@ namespace ns3 {
       }
       else if (hdr.GetAddr1 ().IsGroup ())
       { 
+
         if (hdr.IsData () || hdr.IsMgt ())
         {
           NS_LOG_DEBUG ("rx group from=" << hdr.GetAddr2 ());
