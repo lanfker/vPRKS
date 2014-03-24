@@ -31,14 +31,15 @@ namespace ns3
     {
       if (item.from == it->from && item.to == it->to )
       {
-        it->inComingAttenuation = item.inComingAttenuation;
-        it->outGoingAttenuation = item.outGoingAttenuation;
+        it->attenuation = item.attenuation;
         it->timeStamp = item.timeStamp;
         return;
       }
     }
+
     // if no such from-to pair exist, create a new entry
     m_signalMap.push_back (item);
+    NS_LOG_DEBUG ("New item added, signal map size: "<< m_signalMap.size ());
   }
   SignalMapItem SignalMap::FetchSignalMapItem (uint16_t from, uint16_t to)
   {
@@ -68,7 +69,7 @@ namespace ns3
     uint32_t removeIndex = m_signalMap.size ();
     for (uint32_t i = 0; i < m_signalMap.size (); ++ i)
     {
-      if ( m_signalMap[i].timeStamp + duration < Simulator::Now ()) // expired
+      if ( m_signalMap[i].timeStamp  < Simulator::Now () - duration) // expired
       {
         removeIndex -- ;
         // suppose the swap procedure works
@@ -81,5 +82,20 @@ namespace ns3
     {
       m_signalMap.erase (m_signalMap.end () - removeIndex, m_signalMap.end ());
     }
+  }
+
+  void SignalMap::PrintSignalMap (uint16_t nodeId)
+  {
+    std::cout<<"-------------------signal map for node: "<< nodeId << "-------------------"<< std::endl;
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      std::cout<<"from: "<<it->from<<" to: "<<it->to <<" Atten: "<< it->attenuation <<" timestamp: "<< it->timeStamp << std::endl;
+    }
+    std::cout<<"--------------------------------------------------"<< std::endl;
+  }
+
+  uint32_t SignalMap::GetSize ()
+  {
+    return m_signalMap.size ();
   }
 }

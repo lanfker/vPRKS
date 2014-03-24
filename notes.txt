@@ -4,7 +4,7 @@ Question:
 
 Facts:
   1. What information a packet has to contain:
-    (a) receive power?? (fill in at receiver side)  since signal map should be constructed in the MAC layer. Double
+    (a) (how to get the value)receive power?? (fill in at receiver side)  since signal map should be constructed in the MAC layer. Double
     (b) travelling angle. Double
     (c) current position (x,y). Two double
 

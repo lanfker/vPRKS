@@ -134,11 +134,14 @@ namespace ns3
 
     uint8_t * payload = new uint8_t[DEFAULT_PACKET_LENGTH];
     PayloadBuffer buff = PayloadBuffer (payload);
+    double txPower = 0;
+    double rxPower = 0;
+    buff.WriteDouble (txPower); // will fill in exact value at PHY layer before transmission
+    buff.WriteDouble (rxPower); // will fill in axact value at PHY layer after reception
     buff.WriteDouble (m_angle);
     buff.WriteDouble (m_position.x);
     buff.WriteDouble (m_position.y);
-    std::cout<<"sending: "<<m_angle<<" "<<m_position.x <<" "<< m_position.y << std::endl;
-    std::cout<<payload<< std::endl;
+    //std::cout<<"sending: "<<m_angle<<" "<<m_position.x <<" "<< m_position.y << std::endl;
     Ptr<Packet> pkt = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
 
     mac->Enqueue (pkt, addr1);
@@ -157,19 +160,5 @@ namespace ns3
       return true;
     }
   }
-
-  /*
-  void TraciApplication::GetEdgeInfo ()
-  {
-    traciClient ->CommandGetVariableString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, m_edge);
-    //traciClient->getString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, m_edge);
-
-    std::string lane;
-    traciClient ->CommandGetVariableString (CMD_GET_VEHICLE_VARIABLE, VAR_ROAD_ID, m_name, lane);
-    //traciClient->getString (CMD_GET_VEHICLE_VARIABLE, VAR_LANE_ID, m_name, lane);
-    //m_maxSpeed = traciClient->getFloat (CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane);
-    traciClient ->CommandGetVariableDouble(CMD_GET_LANE_VARIABLE, VAR_MAXSPEED, lane, m_maxSpeed);
-  }
-  */
 
 }

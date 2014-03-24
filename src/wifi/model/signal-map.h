@@ -11,8 +11,7 @@ namespace ns3{
   {
     uint16_t from;
     uint16_t to;
-    double inComingAttenuation;
-    double outGoingAttenuation;
+    double attenuation;
     Time timeStamp;
   }SignalMapItem;
   class SignalMap: public Object
@@ -25,10 +24,12 @@ namespace ns3{
       SignalMapItem FetchSignalMapItem (uint16_t from, uint16_t to);
       void SortAccordingToInComingAttenuation ();
       void RemoveExpiredItem (Time duration);
+      void PrintSignalMap (uint16_t nodeId);
+      uint32_t GetSize ();
       struct Compare {
         bool operator () (SignalMapItem a, SignalMapItem b)
         {
-          return a.inComingAttenuation < b.inComingAttenuation;
+          return a.attenuation< b.attenuation;
         }
       }InComingAttenCompare;
     private:

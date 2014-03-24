@@ -35,6 +35,9 @@
 #include "edca-txop-n.h"
 #include "matrix.h"
 #include "payload-buffer.h"
+#include "signal-map.h"
+#include "ns3/mobility-model.h"
+#include "yans-wifi-phy.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -44,6 +47,7 @@ NS_LOG_COMPONENT_DEFINE ("MacLow");
 
 
 namespace ns3 {
+const uint32_t DEFAULT_PACKET_LENGTH = 100;
 
   class SnrTag : public Tag
   {
@@ -708,17 +712,20 @@ namespace ns3 {
       packet->RemoveHeader (hdr);
 
       //-----------------------------------------------------
-        uint8_t* temp = new uint8_t[packet->GetSize ()];
-        packet->CopyData (temp, packet->GetSize ());
-        PayloadBuffer buff = PayloadBuffer (temp);
-        double angle = buff.ReadDouble ();
-        double x = buff.ReadDouble ();
-        double y = buff.ReadDouble ();
-        std::cout<<" receiving: "<<angle <<" "<<x <<" "<< y<< std::endl;
-        std::cout<<temp<< std::endl;
-
-        delete [] temp;
-        //---------------------------------------------
+      uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
+      uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
+      //std::cout<<"copied bytes: "<< copyBytes << std::endl;
+      PayloadBuffer buff = PayloadBuffer (temp);
+      double txPower = buff.ReadDouble ();
+      double rxPower = buff.ReadDouble ();
+      double angle = buff.ReadDouble ();
+      double x = buff.ReadDouble ();
+      double y = buff.ReadDouble ();
+      //std::cout<<" receiving: "<< txPower << " "<< rxPower << " "<<angle <<" "<<x <<" "<< y<< std::endl;
+      //std::cout<<temp<< std::endl;
+      delete [] temp;
+      //---------------------------------------------
+      //
 
       bool isPrevNavZero = IsNavZero ();
       NS_LOG_DEBUG ("duration/id=" << hdr.GetDuration ());
@@ -937,6 +944,42 @@ namespace ns3 {
       else if (hdr.GetAddr1 ().IsGroup ())
       { 
 
+        //====BROADCAST MESSAGE================
+
+        SignalMapItem signalMapItem;
+        signalMapItem.to = m_self.GetNodeId ();
+        signalMapItem.from = hdr.GetAddr2 ().GetNodeId ();
+        signalMapItem.attenuation = txPower - rxPower;
+        signalMapItem.timeStamp = Simulator::Now ();
+        m_signalMap.AddOrUpdate (signalMapItem);
+
+        ObservationItem obsItem;
+
+        /*
+           double senderX;
+           double senderY;
+           double receiverX;
+           double receiverY;
+           double averageAttenuation;
+           Time timeStamp;
+           */
+        obsItem.senderX = x;
+        obsItem.senderY = y;
+        Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
+        Vector position = selfMobilityModel -> GetPosition ();
+        obsItem.receiverX =  position.x;
+        obsItem.receiverY =  position.y;
+        obsItem.averageAttenuation = txPower - rxPower;
+        obsItem.timeStamp = Simulator::Now ();
+        m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
+        //std::cout<<"observation link count: "<< m_observation.FindLinkCount () <<" minimum observation: "
+          //<< m_observation.FindMinimumObservationLength () << std::endl;
+        m_observation.RemoveExpireItems (Seconds(10), 10);
+        m_observation.PrintObservations ();
+        //std::cout<<m_self.GetNodeId () <<" signal map size: "<< m_signalMap.GetSize () << std::endl;
+        //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
+        //std::cout<<" going to add, from: "<< signalMapItem.from <<" to: "<< signalMapItem.to << std::endl;
+        //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
         if (hdr.IsData () || hdr.IsMgt ())
         {
           NS_LOG_DEBUG ("rx group from=" << hdr.GetAddr2 ());
@@ -1408,7 +1451,7 @@ rxPacket:
   void
     MacLow::SendDataPacket (void)
     {
-      std::cout<<Simulator::Now () <<" "<<m_self<<" sending packet "<< std::endl;
+      std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<<" sending packet "<< std::endl;
       NS_LOG_FUNCTION (this);
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
@@ -1449,6 +1492,24 @@ rxPacket:
         }
       }
       m_currentHdr.SetDuration (duration);
+
+      //---------Add txPower---------------------------------------
+      uint8_t payload[DEFAULT_PACKET_LENGTH];
+      m_currentPacket->CopyData (payload, DEFAULT_PACKET_LENGTH);
+      PayloadBuffer buff = PayloadBuffer (payload);
+      uint8_t txPowerLevel = 0;//default tx Power level
+      buff.WriteDouble ((double)txPowerLevel);
+      m_currentPacket = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
+      //-----------------------------------------------------------
+      /*
+         buff.ReSetPointer ();
+         double txPower = buff.ReadDouble ();
+         double rxPower = buff.ReadDouble ();
+         double angle = buff.ReadDouble ();
+         double x = buff.ReadDouble ();
+         double y = buff.ReadDouble ();
+         std::cout<<" after writing rxPower: "<< txPower << " "<< rxPower << " "<<angle <<" "<<x <<" "<< y<< std::endl;
+         */
 
       m_currentPacket->AddHeader (m_currentHdr);
       WifiMacTrailer fcs;
@@ -1893,5 +1954,6 @@ rxPacket:
     {
       m_edcaListeners.insert (std::make_pair (ac, listener));
     }
+
 
 } // namespace ns3

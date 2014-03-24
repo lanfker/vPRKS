@@ -35,11 +35,15 @@
 #include "ns3/pointer.h"
 #include "ns3/net-device.h"
 #include "ns3/trace-source-accessor.h"
+#include "payload-buffer.h"
 #include <math.h>
+#include "wifi-mac-trailer.h"
+#include "wifi-mac-header.h"
 
 NS_LOG_COMPONENT_DEFINE ("YansWifiPhy");
 
 namespace ns3 {
+const uint32_t DEFAULT_PACKET_LENGTH = 100;
 
   NS_OBJECT_ENSURE_REGISTERED (YansWifiPhy);
 
@@ -404,6 +408,37 @@ switchChannel:
     {
       NS_LOG_FUNCTION (this << packet << rxPowerDbm << txMode << preamble);
       rxPowerDbm += m_rxGainDb;
+
+      //-------Add rxPower in payload
+      WifiMacHeader _hdr;
+      WifiMacTrailer _fcs;
+      packet->RemoveHeader (_hdr);
+      packet->RemoveTrailer (_fcs);
+
+      uint8_t payload[DEFAULT_PACKET_LENGTH];
+      packet->CopyData (payload, DEFAULT_PACKET_LENGTH);
+      PayloadBuffer buf = PayloadBuffer (payload);
+      uint8_t txPower = (uint8_t) buf.ReadDouble (); //txpower level
+      buf.ReSetPointer ();
+      buf.WriteDouble (GetPowerDbm (txPower) + m_txGainDb);
+      buf.WriteDouble (rxPowerDbm);
+      /*
+      buf.ReSetPointer ();
+      double txPowerDouble = buf.ReadDouble ();
+      double rxPower = buf.ReadDouble ();
+      double angle = buf.ReadDouble ();
+      double x = buf.ReadDouble ();
+      double y = buf.ReadDouble ();
+      std::cout<<" after writing rxPower: "<< txPowerDouble << " "<< rxPower << " "<<angle <<" "<<x <<" "<< y<< std::endl;
+      */
+
+      packet = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
+      packet->AddHeader (_hdr);
+      packet->AddTrailer (_fcs);
+
+      //--------------------------------
+
+
       double rxPowerW = DbmToW (rxPowerDbm);
       Time rxDuration = CalculateTxDuration (packet->GetSize (), txMode, preamble);
       Time endRx = Simulator::Now () + rxDuration;
@@ -506,7 +541,7 @@ maybeCcaBusy:
        *    prevent it.
        *  - we are idle
        */
-      //std::cout<<" PHY state is: "<<m_state->GetState () << std::endl;
+      
       NS_ASSERT (!m_state->IsStateTx () && !m_state->IsStateSwitching ());
 
       Time txDuration = CalculateTxDuration (packet->GetSize (), txMode, preamble);

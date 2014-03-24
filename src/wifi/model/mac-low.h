@@ -40,7 +40,9 @@
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "qos-utils.h"
+#include "signal-map.h"
 #include "block-ack-cache.h"
+#include "observation.h"
 
 namespace ns3 {
 
@@ -500,6 +502,8 @@ public:
    */
   void RegisterBlockAckListenerForAc (enum AcIndex ac, MacLowBlockAckEventListener *listener);
 private:
+  SignalMap m_signalMap;
+  Observation m_observation;
   void CancelAllEvents (void);
   uint32_t GetAckSize (void) const;
   uint32_t GetBlockAckSize (enum BlockAckType type) const;

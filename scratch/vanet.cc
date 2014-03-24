@@ -28,8 +28,9 @@ int main (int argc, char **argv)
   int runNumber = rand () % MAX_RUN_NUMBER;
   SeedManager::SetRun (runNumber);
 
-  LogComponentEnable ("TraciApplication", LOG_LEVEL_DEBUG);
+  //LogComponentEnable ("TraciApplication", LOG_LEVEL_DEBUG);
   //LogComponentEnable ("YansWifiPhy", LOG_LEVEL_DEBUG);
+  LogComponentEnable ("Observation", LOG_LEVEL_DEBUG);
 
   Packet::EnablePrinting ();
   string sumoConfig = "scratch/cross.sumocfg";

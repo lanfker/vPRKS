@@ -63,4 +63,9 @@ namespace ns3
     }
   }
 
+  void PayloadBuffer::ReSetPointer ()
+  {
+    m_current = m_data;
+  }
+
 }

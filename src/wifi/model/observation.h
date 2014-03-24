@@ -37,6 +37,8 @@ namespace ns3{
       // find the minimum number such that we can know what is the shape of the matrix we can get from this observation
       uint32_t FindMinimumObservationLength ();
       uint32_t FindLinkCount ();
+      void PrintObservations ();
+      void RemoveExpireItems (Time duration, uint32_t maxCount);
       std::vector <LinkObservations> m_observations; // a vector of vectors
     private:
   };

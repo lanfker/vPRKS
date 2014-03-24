@@ -63,4 +63,42 @@ namespace ns3
   {
     return m_observations.size ();
   }
+
+  void Observation::PrintObservations ()
+  {
+    for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
+        ++ it)
+    {
+      std::cout<<"For sender: "<< it->sender << " --> "<< it->receiver << std::endl;
+      for (std::vector< ObservationItem >::iterator sub_it = it->observations.begin ();
+          sub_it != it->observations.end (); ++ sub_it)
+      {
+        std::cout<<"\t\t\t" <<" sender: ("<<sub_it->senderX<<", "<<sub_it->senderY<<") receiver: ("<<sub_it->receiverX<<", "<<
+          sub_it->receiverY <<") avg_atten: "<<sub_it->averageAttenuation <<" timestamp: "<< sub_it->timeStamp << std::endl;
+      }
+    }
+  }
+
+  void Observation::RemoveExpireItems (Time duration, uint32_t maxCount)
+  {
+    for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
+        ++ it)
+    {
+      for (std::vector< ObservationItem >::iterator sub_it = it->observations.begin ();
+          sub_it != it->observations.end (); ++ sub_it)
+      {
+        std::cout<<"timestamp: "<< sub_it->timeStamp <<" duration: "<< duration << " now: "<< Simulator::Now () ;
+        if (sub_it->timeStamp < Simulator::Now () - duration )
+        {
+          it->observations.erase (sub_it, it->observations.end ());
+          break;
+        }
+        if (sub_it - it->observations.begin () > maxCount - 1)
+        {
+          it->observations.erase (sub_it, it->observations.end ());
+          break;
+        }
+      }
+    }
+  }
 }

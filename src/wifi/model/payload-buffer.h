@@ -20,6 +20,8 @@ namespace ns3{
       void WriteU8 (uint8_t value);
       void WriteDouble (double value);
 
+      void ReSetPointer ();
+
     private:
       uint8_t* m_data;
       uint8_t* m_current;
