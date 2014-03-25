@@ -87,7 +87,7 @@ namespace ns3
       for (std::vector< ObservationItem >::iterator sub_it = it->observations.begin ();
           sub_it != it->observations.end (); ++ sub_it)
       {
-        std::cout<<"timestamp: "<< sub_it->timeStamp <<" duration: "<< duration << " now: "<< Simulator::Now () ;
+        //std::cout<<"timestamp: "<< sub_it->timeStamp <<" duration: "<< duration << " now: "<< Simulator::Now () ;
         if (sub_it->timeStamp < Simulator::Now () - duration )
         {
           it->observations.erase (sub_it, it->observations.end ());

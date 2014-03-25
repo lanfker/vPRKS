@@ -50,10 +50,14 @@ namespace ns3
   void DoubleRegression::GetCoefficientBeta (Matrix &betaMatrix)
   {
     Matrix phiTranspose = Matrix (m_phi.GetN (), m_phi.GetM ());
-    Matrix phiDotPhiTranspose = Matrix (m_phi.GetN (), phiTranspose.GetN ());
+    Matrix phiDotPhiTranspose = Matrix (m_phi.GetN (), phiTranspose.GetM ());
 
     m_phi.Transpose (phiTranspose); // \Phi^T * \Phi
+    std::cout<<" original: "<<m_phi.GetM () <<"x"<<m_phi.GetN () << std::endl;
+    std::cout<<" transpose: "<<phiTranspose.GetM () <<"x"<<phiTranspose.GetN () << std::endl;
+
     phiTranspose.Product (m_phi, phiDotPhiTranspose); // (\Phi^T \Phi)^{-1}
+    std::cout<<" traspose*original: "<<phiTranspose.GetM () <<"x"<<phiTranspose.GetN () << std::endl;
     
     Matrix inv = Matrix (phiDotPhiTranspose.GetM (), phiDotPhiTranspose.GetN ());
 

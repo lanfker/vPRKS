@@ -30,6 +30,7 @@ namespace ns3
     _matrix = new double*[_m];
     for (uint32_t i = 0; i < _m; ++ i)
     {
+      std::cout<<" allocating array of one"<<" _m: "<<_m <<" _n: "<< _n<< " i: "<< i << std::endl;
       _matrix[i] = new double[_n];
     }
 

@@ -38,6 +38,7 @@
 #include "signal-map.h"
 #include "ns3/mobility-model.h"
 #include "yans-wifi-phy.h"
+#include "double-regression.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -975,7 +976,15 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
         //std::cout<<"observation link count: "<< m_observation.FindLinkCount () <<" minimum observation: "
           //<< m_observation.FindMinimumObservationLength () << std::endl;
         m_observation.RemoveExpireItems (Seconds(10), 10);
-        m_observation.PrintObservations ();
+        DoubleRegression doubleRegression;
+        doubleRegression.Initialize (m_observation);
+        std::cout<<"allocating matrix "<< std::endl;
+        Matrix  betaMatrix = Matrix (4,1);
+        doubleRegression.GetCoefficientBeta (betaMatrix);
+        std::cout<<" coefficients are: "<< std::endl;
+        betaMatrix.ShowMatrix ();
+        
+        //m_observation.PrintObservations ();
         //std::cout<<m_self.GetNodeId () <<" signal map size: "<< m_signalMap.GetSize () << std::endl;
         //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
         //std::cout<<" going to add, from: "<< signalMapItem.from <<" to: "<< signalMapItem.to << std::endl;
