@@ -20,12 +20,9 @@ namespace ns3{
       static TypeId GetTypeId(void);
       DoubleRegression ();
       ~DoubleRegression ();
-      void Initialize (Observation obs);
-      void GetCoefficientBeta (Matrix &betaMatrix);
+      void Initialize (Observation obs, Matrix &phi, Matrix &pathLoss);
+      void GetCoefficientBeta (Matrix &betaMatrix, Matrix &phi, Matrix &pathLoss);
     private:
-      uint32_t m_referenceLinkCount;
-      Matrix m_phi;
-      Matrix m_pathloss;
   };
 }
 

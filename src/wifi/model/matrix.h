@@ -30,6 +30,7 @@ namespace ns3{
       void ShowMatrix ();
       void Product (Matrix &inverseMatrix, Matrix &resultMatrix);
       bool Transpose (Matrix &transposeMatrix);
+      void ShowShape ();
     private:
       // In our case, _m and _n should be equal
       uint32_t _m;

@@ -976,13 +976,20 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
         //std::cout<<"observation link count: "<< m_observation.FindLinkCount () <<" minimum observation: "
           //<< m_observation.FindMinimumObservationLength () << std::endl;
         m_observation.RemoveExpireItems (Seconds(10), 10);
-        DoubleRegression doubleRegression;
-        doubleRegression.Initialize (m_observation);
-        std::cout<<"allocating matrix "<< std::endl;
-        Matrix  betaMatrix = Matrix (4,1);
-        doubleRegression.GetCoefficientBeta (betaMatrix);
-        std::cout<<" coefficients are: "<< std::endl;
-        betaMatrix.ShowMatrix ();
+        uint32_t obs_count = m_observation.FindLinkCount ();
+        if ( obs_count > 1)
+        {
+          DoubleRegression doubleRegression;
+          Matrix phi = Matrix(obs_count, 4);
+          Matrix pathLoss = Matrix (obs_count, 1);
+          doubleRegression.Initialize (m_observation, phi, pathLoss);
+          //phi.ShowMatrix ();
+          //pathLoss.ShowMatrix ();
+          Matrix  betaMatrix = Matrix (4,1);
+          doubleRegression.GetCoefficientBeta (betaMatrix, phi, pathLoss);
+          //std::cout<<" coefficients are: "<< std::endl;
+          //betaMatrix.ShowMatrix ();
+        }
         
         //m_observation.PrintObservations ();
         //std::cout<<m_self.GetNodeId () <<" signal map size: "<< m_signalMap.GetSize () << std::endl;

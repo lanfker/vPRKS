@@ -30,8 +30,12 @@ namespace ns3
     _matrix = new double*[_m];
     for (uint32_t i = 0; i < _m; ++ i)
     {
-      std::cout<<" allocating array of one"<<" _m: "<<_m <<" _n: "<< _n<< " i: "<< i << std::endl;
+      //std::cout<<" allocating array of one"<<" _m: "<<_m <<" _n: "<< _n<< " i: "<< i << std::endl;
       _matrix[i] = new double[_n];
+      if (_matrix[i] == NULL)
+      {
+        std::cout<<"allocating memory failed"<< std::endl;
+      }
     }
 
     for (uint32_t i = 0; i < _m ; ++ i)
@@ -72,6 +76,7 @@ namespace ns3
 
   bool Matrix::SetValue (uint32_t i, uint32_t j, double value)
   {
+    //std::cout<<" _matrix[i] = "<< _matrix[i] << std::endl;
     if (i > GetM () - 1 || j > GetN () )
     {
       return false;
@@ -91,6 +96,7 @@ namespace ns3
 
   bool Matrix::Inverse (Matrix &inverseMatrix)
   {
+    //this->ShowMatrix ();
     Matrix expandMatrix = Matrix (GetM (), GetM () * 2); // two times of the length
     //Matrix inverseMatrix = Matrix (GetM (), GetN ()); // m and n should be of the same value
     InitiateExpandMatrix ((*this), expandMatrix);
@@ -159,6 +165,7 @@ namespace ns3
         }
       }
     }
+    //expandMatrix.ShowMatrix ();
   }
 
 
@@ -176,6 +183,7 @@ namespace ns3
         targetElement = targetElement / firstElement;
         SetValue (i,j,targetElement);
       }
+      //this->ShowMatrix ();
       for (uint32_t m = 0; m < GetM (); ++ m)
       {
         if (m == i)
@@ -188,13 +196,16 @@ namespace ns3
           GetValue (i, n, value);
           double targetValue;
           GetValue (m, n, targetValue);
-          targetValue = targetValue - value * times;
+          //std::cout<<" target_value: "<< targetValue <<" value: "<< value <<" times: "<< times;
+          double final= targetValue - value * times;
+          //std::cout<<" final: "<< final << std::endl;
 
-          SetValue (m, n, targetValue);
+
+          SetValue (m, n, final);
         }
       }
     }
-    this->ShowMatrix ();
+    //this->ShowMatrix ();
   }
 
   void Matrix::GetInverseMatrix (Matrix &expandMatrix, Matrix &inverseMatrix)
@@ -268,5 +279,10 @@ namespace ns3
     {
       return false;
     }
+  }
+
+  void Matrix::ShowShape ()
+  {
+    std::cout<<"Row: "<<_m<<" Column: "<< _n<< std::endl;
   }
 }

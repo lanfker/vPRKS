@@ -81,6 +81,7 @@ namespace ns3
 
   void Observation::RemoveExpireItems (Time duration, uint32_t maxCount)
   {
+    std::vector<uint32_t> emptyIndex;
     for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
         ++ it)
     {
@@ -98,6 +99,25 @@ namespace ns3
           it->observations.erase (sub_it, it->observations.end ());
           break;
         }
+      }
+      if (it->observations.size () ==  0)
+      {
+        std::cout<<"!!!!!!!!!!!!! insert: "<< it - m_observations.begin () << std::endl;
+        emptyIndex.insert (emptyIndex.begin (), it - m_observations.begin () );
+      }
+    }
+    for (std::vector<uint32_t>::iterator it = emptyIndex.begin (); it != emptyIndex.end (); ++ it)
+    {
+      std::cout<<"!!!!!!!!!!!!! erase: "<<   *it<< std::endl;
+      m_observations.erase (m_observations.begin () + *it);
+    }
+  
+    for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
+        ++ it)
+    {
+      if (it->observations.size () == 0)
+      {
+        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! remove failed" << std::endl;
       }
     }
   }
