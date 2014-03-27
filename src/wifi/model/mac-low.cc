@@ -375,6 +375,8 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
     m_lastNavDuration = Seconds (0);
     m_lastNavStart = Seconds (0);
     m_promisc = false;
+    m_sequenceNumber = 0;
+
 
     /*
     Matrix matrix = Matrix (3,3);
@@ -1508,6 +1510,8 @@ rxPacket:
         }
       }
       m_currentHdr.SetDuration (duration);
+      m_currentHdr.SetSequenceNumber (m_sequenceNumber); // set sequence number for packets at data channel.
+      m_sequenceNumber ++ ;
 
       //---------Add txPower---------------------------------------
       uint8_t payload[DEFAULT_PACKET_LENGTH];

@@ -502,6 +502,7 @@ public:
    */
   void RegisterBlockAckListenerForAc (enum AcIndex ac, MacLowBlockAckEventListener *listener);
 private:
+  uint32_t m_sequenceNumber;
   SignalMap m_signalMap;
   Observation m_observation;
   void CancelAllEvents (void);
