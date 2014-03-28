@@ -38,7 +38,7 @@ namespace ns3 {
           const Attributes& attrs
           );
       virtual void fatalError (const SAXParseException& );
-      void characters (const XMLCh* const, const unsigned int);
+      //void characters (const XMLCh* const, const unsigned int);
 
       static void ParseNodeXmlFile (const string & filename);
 

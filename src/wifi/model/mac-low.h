@@ -43,6 +43,7 @@
 #include "signal-map.h"
 #include "block-ack-cache.h"
 #include "observation.h"
+#include "link-estimator.h"
 
 namespace ns3 {
 
@@ -502,8 +503,9 @@ public:
    */
   void RegisterBlockAckListenerForAc (enum AcIndex ac, MacLowBlockAckEventListener *listener);
 private:
-  uint32_t m_sequenceNumber;
+  uint16_t m_sequenceNumber;
   SignalMap m_signalMap;
+  LinkEstimator m_linkEstimator;
   Observation m_observation;
   void CancelAllEvents (void);
   uint32_t GetAckSize (void) const;

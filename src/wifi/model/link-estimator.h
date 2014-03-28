@@ -28,6 +28,7 @@ namespace ns3{
       void AddSequenceNumber (uint32_t seq, uint16_t sender, uint16_t receiver, Time timeStamp);
       void InsertSeqNumber (std::vector<uint32_t> &vec, uint32_t seq);
       bool IsPdrUpdated (uint16_t sender, uint16_t receiver, uint32_t window);
+      LinkEstimationItem GetLinkEstimationItem (uint16_t sender, uint16_t receiver);
     private:
       std::vector<LinkEstimationItem> m_estimations;
       double m_coefficient;

@@ -39,6 +39,7 @@
 #include "ns3/mobility-model.h"
 #include "yans-wifi-phy.h"
 #include "double-regression.h"
+#include "link-estimator.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -949,6 +950,22 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
 
         //====BROADCAST MESSAGE================
 
+        LinkEstimator linkEstimator;
+        uint16_t sender = hdr.GetAddr2 ().GetNodeId ();
+        uint16_t receiver = m_self.GetNodeId ();
+        //std::cout<<" receivd sequence number is: "<< hdr.GetSequenceNumber () << std::endl;
+        m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
+        LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
+        //std::cout<<" sequence number size: "<< _item.receivedSequenceNumbers.size () << std::endl;
+        std::cout<<"Time: "<< Simulator::Now ()<<"ns"<<std::endl;
+        for (std::vector<uint32_t>::iterator int32_it = _item.receivedSequenceNumbers.begin ();
+            int32_it != _item.receivedSequenceNumbers.end (); ++ int32_it)
+        {
+          std::cout<<" "<<*int32_it;
+        }
+        std::cout<<std::endl;
+        m_linkEstimator.IsPdrUpdated (sender, receiver, 20); // 20 as window size
+
         SignalMapItem signalMapItem;
         signalMapItem.to = m_self.GetNodeId ();
         signalMapItem.from = hdr.GetAddr2 ().GetNodeId ();
@@ -1469,7 +1486,7 @@ rxPacket:
   void
     MacLow::SendDataPacket (void)
     {
-      std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<<" sending packet "<< std::endl;
+      //std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<<" sending packet "<< std::endl;
       NS_LOG_FUNCTION (this);
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();

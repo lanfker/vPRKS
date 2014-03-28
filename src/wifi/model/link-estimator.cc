@@ -45,9 +45,19 @@ namespace ns3
         }
         it->timeStamp = timeStamp;
         InsertSeqNumber (it->receivedSequenceNumbers, seq);
-        break;
+        return;
       }
     }
+    // if no entry found
+    LinkEstimationItem item;
+    item.sender = sender;
+    item.receiver = receiver;
+    item.timeStamp = timeStamp;
+    item.instantPdr = 0;
+    item.ewmaPdr = 0;
+    item.receivedSequenceNumbers.push_back (seq);
+    m_estimations.push_back (item);
+
   }
 
   void LinkEstimator::InsertSeqNumber (std::vector<uint32_t> &vec, uint32_t seq)
@@ -75,9 +85,9 @@ namespace ns3
       if (it->sender == sender && it->receiver == receiver)
       {
 
-        std::vector<uint32_t>::iterator _last = it->receivedSequenceNumbers.begin ();
-        std::vector<uint32_t>::iterator _first = it->receivedSequenceNumbers.end () - 1;
-        if (*_last - *_first > 2000 ) //4096 overflow
+        uint32_t _first = it->receivedSequenceNumbers[0];
+        uint32_t _last = it->receivedSequenceNumbers[ it->receivedSequenceNumbers.size () - 1];
+        if (_last - _first > 2000 ) //4096 overflow
         {
           for (std::vector<uint32_t>::iterator _it = it->receivedSequenceNumbers.begin (); 
               _it != it->receivedSequenceNumbers.end (); ++ _it)
@@ -89,9 +99,9 @@ namespace ns3
           }
         }
         sort (it->receivedSequenceNumbers.begin (), it->receivedSequenceNumbers.end ());
-        if (*_last - *_first + 1 >= window)
+        if (_last - _first + 1 >= window)
         {
-          it->instantPdr = (double)(it->receivedSequenceNumbers.size ()) / (*_last - *_first + 1);
+          it->instantPdr = (double)(it->receivedSequenceNumbers.size ()) / (_last - _first + 1);
           it->ewmaPdr = (1-m_coefficient) * it->ewmaPdr + m_coefficient * it->instantPdr;
           it->receivedSequenceNumbers.clear ();
           return true;
@@ -100,6 +110,17 @@ namespace ns3
         {
           return false;
         }
+      }
+    }
+  }
+
+  LinkEstimationItem LinkEstimator::GetLinkEstimationItem (uint16_t sender, uint16_t receiver)
+  {
+    for (std::vector<LinkEstimationItem>::iterator it = m_estimations.begin (); it != m_estimations.end (); ++ it)
+    {
+      if ( it->sender == sender && it->receiver == receiver)
+      {
+        return *it;
       }
     }
   }

@@ -4,5 +4,3 @@ Loading additional-files from 'scratch/cross.det.xml'...  done (0ms).
 Loading done.
 Simulation started with time: 0.00
 ***Starting server on port 8813 ***
-Error: tcpip::Socket::recvAndCheck @ recv: peer shutdown
-Quitting (on error).
