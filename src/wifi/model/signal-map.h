@@ -32,6 +32,12 @@ namespace ns3{
           return a.attenuation< b.attenuation;
         }
       }InComingAttenCompare;
+      typedef std::vector<SignalMapItem>::iterator Iterator;
+      //typedef std::vector<SignalMapItem>::const_iterator ConstIterator;
+      Iterator begin () { return m_signalMap.begin ();}
+      //ConstIterator begin () {return m_signalMap.begin (); }
+      Iterator end () {return m_signalMap.end ();}
+      //ConstIterator end () {return m_signalMap.end (); }
     private:
       std::vector<SignalMapItem> m_signalMap;
   };
