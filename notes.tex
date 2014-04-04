@@ -9,7 +9,13 @@
 \begin{document}
 
 \section{Question}
-1. How to get $\Phi_i$ for Kalman filter?????
+1. How to get $\Phi_i$ for Kalman filter????? (will work on this later)
+2. How to design a message forwarding mechanism?
+
+\section{To Do}
+%check density of directions of nearby vehicles, allocate slots (by checking direction distribution, we can allocate slots distributedly)
+%Maintain active slots in SignalMap. 
+Maintain a vehicle active time (When the vehicle enters our simulation)
 
 
 \section {Facts}
@@ -34,12 +40,12 @@
 
 We are actually using Control channel, and packets in control channel usually has much higher transmission power. As a result, we can create measured signal map beyond normal transmission range. (2014-04-01 Tue 11:44 AM)
 
-\section{To Do}
-%check density of directions of nearby vehicles, allocate slots (by checking direction distribution, we can allocate slots distributedly)
-Maintain active slots in SignalMap. 
 
 \section{How to run the protocol}
-At the very beginning, all vehicles stay in the data channel with initial exclusion region. Our scheduling algorithm tries to schedule vehicles with local maximum priority. 
+First, we need to create signal maps for our scheduling algorithm. When simulation starts, all nodes run CSMA/CA to create signal map for later use for 100 seconds.
+
+For newly joined vehicles, they should first try to overhear nearby signal maps. Also, they should send out beacon messages in control channel to let others discover them.
+
 Vehicles choose to stay in control channel if no vehicle asks them to stay in data channel. (Here, we need to make sure the message of informing other vehicles to stay in data channel be very reliable) 
 
 
