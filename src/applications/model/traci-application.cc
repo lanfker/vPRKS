@@ -16,6 +16,7 @@
 #include "ns3/traci-client-module.h"
 #include "ns3/wifi-module.h"
 #include <sstream>
+#include "ns3/settings.h"
 
 #ifndef YANS_WIFI
 #define YANS_WIFI
@@ -130,6 +131,7 @@ namespace ns3
     //--------------------Get position and angle ---------------------------------
     traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, m_position);
     traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, m_name, m_angle);
+    mac->SetAngle (m_angle );
 
 
     uint8_t * payload = new uint8_t[DEFAULT_PACKET_LENGTH];

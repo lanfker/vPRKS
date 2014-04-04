@@ -502,11 +502,23 @@ public:
    * associated to this AC.
    */
   void RegisterBlockAckListenerForAc (enum AcIndex ac, MacLowBlockAckEventListener *listener);
+
+  int64_t GetCurrentSlot ();
+  void GetOwnSlotsInFrame (uint16_t &begin, uint16_t &end, DirectionDistribution directions);
+  void SetAngle (double angle);
 private:
+  //-----------------------------------VPRKS----------------------
   uint16_t m_sequenceNumber;
   SignalMap m_signalMap;
   LinkEstimator m_linkEstimator;
   Observation m_observation;
+  double m_txPower;
+  int64_t m_currentSlot;
+  double m_angle;
+
+
+  //----------------------------------End VPRKS-------------------
+
   void CancelAllEvents (void);
   uint32_t GetAckSize (void) const;
   uint32_t GetBlockAckSize (enum BlockAckType type) const;

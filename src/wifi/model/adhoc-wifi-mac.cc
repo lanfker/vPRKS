@@ -189,4 +189,9 @@ AdhocWifiMac::Receive (Ptr<Packet> packet, const WifiMacHeader *hdr)
   RegularWifiMac::Receive (packet, hdr);
 }
 
+void AdhocWifiMac::SetAngle (double angle)
+{
+  m_low->SetAngle (angle);
+}
+
 } // namespace ns3

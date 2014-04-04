@@ -22,6 +22,12 @@ namespace ns3
     m_current = m_data;
   }
 
+  uint32_t PayloadBuffer::CheckRemainBytes (uint32_t bufferLength)
+  {
+    uint32_t offset = m_current - m_data;
+    return bufferLength - offset - 1;
+  }
+
   PayloadBuffer::PayloadBuffer ()
   {
   }
@@ -30,6 +36,16 @@ namespace ns3
   {
     m_current ++;
     return *(m_current - 1);
+  }
+  uint16_t PayloadBuffer::ReadU16 ()
+  {
+    uint8_t byte0 = ReadU8 ();
+    uint8_t byte1 = ReadU8 ();
+    uint16_t value = byte1;
+    value <<= 8;
+    value |= byte0;
+
+    return value;
   }
 
   double PayloadBuffer::ReadDouble ()
@@ -54,6 +70,13 @@ namespace ns3
     m_current ++;
   }
 
+  void PayloadBuffer::WriteU16 (uint16_t value)
+  {
+    WriteU8 (value & 0xff);
+    value >>= 8;
+    WriteU8 (value & 0xff);
+  }
+
   void PayloadBuffer::WriteDouble (double value)
   {
     uint8_t* buff = (uint8_t *)& value;
@@ -68,4 +91,12 @@ namespace ns3
     m_current = m_data;
   }
 
+
+  void PayloadBuffer::ReadDoubles (uint32_t times)
+  {
+    for (uint32_t i = 0; i < times; ++ i)
+    {
+      ReadDouble ();
+    }
+  }
 }

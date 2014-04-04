@@ -23,9 +23,6 @@
 
 namespace ns3{
 
-  const uint32_t DEFAULT_WIFI_DEVICE_INDEX = 0;
-  const uint32_t DEFAULT_PACKET_LENGTH = 100;
-  const uint64_t PAKCET_GENERATION_INTERVAL = 100;// in milliseconds. This is the default interval for safety message.
 
 
   class TraciApplication: public Application

@@ -10,11 +10,10 @@
 #include "ns3/wifi-module.h"
 #include "ns3/physim-wifi-module.h"
 #include "ns3/network-module.h"
+#include "ns3/settings.h"
 
 using namespace std;
 using namespace ns3;
-#define MAX_RANDOM_SEED 100
-#define MAX_RUN_NUMBER 200
 
 NS_LOG_COMPONENT_DEFINE ("VANET");
 
@@ -30,7 +29,7 @@ int main (int argc, char **argv)
 
   //LogComponentEnable ("TraciApplication", LOG_LEVEL_DEBUG);
   //LogComponentEnable ("YansWifiPhy", LOG_LEVEL_DEBUG);
-  LogComponentEnable ("Observation", LOG_LEVEL_DEBUG);
+  //LogComponentEnable ("Observation", LOG_LEVEL_DEBUG);
 
   Packet::EnablePrinting ();
   string sumoConfig = "scratch/cross.sumocfg";

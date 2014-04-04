@@ -102,13 +102,13 @@ namespace ns3
       }
       if (it->observations.size () ==  0)
       {
-        std::cout<<"!!!!!!!!!!!!! insert: "<< it - m_observations.begin () << std::endl;
+        //std::cout<<"!!!!!!!!!!!!! insert: "<< it - m_observations.begin () << std::endl;
         emptyIndex.insert (emptyIndex.begin (), it - m_observations.begin () );
       }
     }
     for (std::vector<uint32_t>::iterator it = emptyIndex.begin (); it != emptyIndex.end (); ++ it)
     {
-      std::cout<<"!!!!!!!!!!!!! erase: "<<   *it<< std::endl;
+      //std::cout<<"!!!!!!!!!!!!! erase: "<<   *it<< std::endl;
       m_observations.erase (m_observations.begin () + *it);
     }
   
@@ -117,7 +117,7 @@ namespace ns3
     {
       if (it->observations.size () == 0)
       {
-        std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! remove failed" << std::endl;
+        //std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! remove failed" << std::endl;
       }
     }
   }

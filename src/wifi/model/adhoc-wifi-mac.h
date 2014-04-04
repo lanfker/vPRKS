@@ -61,6 +61,8 @@ public:
    */
   virtual void Enqueue (Ptr<const Packet> packet, Mac48Address to);
 
+  void SetAngle (double angle);
+
 private:
   virtual void Receive (Ptr<Packet> packet, const WifiMacHeader *hdr);
 };

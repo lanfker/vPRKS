@@ -39,11 +39,11 @@
 #include <math.h>
 #include "wifi-mac-trailer.h"
 #include "wifi-mac-header.h"
+#include "ns3/settings.h"
 
 NS_LOG_COMPONENT_DEFINE ("YansWifiPhy");
 
 namespace ns3 {
-const uint32_t DEFAULT_PACKET_LENGTH = 100;
 
   NS_OBJECT_ENSURE_REGISTERED (YansWifiPhy);
 
@@ -690,9 +690,9 @@ maybeCcaBusy:
       NS_LOG_FUNCTION (this);
       m_channelStartingFrequency = 5e3; // 802.11p works over the 5Ghz freq range
 
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate6MbpsBW10MHz ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate3MbpsBW10MHz ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate4_5MbpsBW10MHz ());
-      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate6MbpsBW10MHz ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate9MbpsBW10MHz ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate12MbpsBW10MHz ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate18MbpsBW10MHz ());

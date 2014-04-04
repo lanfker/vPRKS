@@ -15,9 +15,13 @@ namespace ns3{
       PayloadBuffer ();
       ~PayloadBuffer ();
       double ReadDouble ();
+      void ReadDoubles (uint32_t times);
       uint8_t ReadU8 ();
+      uint16_t ReadU16 ();
+      uint32_t CheckRemainBytes (uint32_t bufferLength);
 
       void WriteU8 (uint8_t value);
+      void WriteU16 (uint16_t value);
       void WriteDouble (double value);
 
       void ReSetPointer ();

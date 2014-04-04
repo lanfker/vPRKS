@@ -171,6 +171,7 @@ def build(bld):
     headers = bld.new_task_gen(features=['ns3header'])
     headers.module = 'core'
     headers.source = [
+        'model/settings.h',
         'model/nstime.h',
         'model/event-id.h',
         'model/event-impl.h',

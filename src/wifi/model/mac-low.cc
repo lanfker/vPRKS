@@ -40,6 +40,7 @@
 #include "yans-wifi-phy.h"
 #include "double-regression.h"
 #include "link-estimator.h"
+#include "ns3/settings.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -49,7 +50,7 @@ NS_LOG_COMPONENT_DEFINE ("MacLow");
 
 
 namespace ns3 {
-const uint32_t DEFAULT_PACKET_LENGTH = 100;
+//const uint32_t DEFAULT_PACKET_LENGTH = 100;
 
   class SnrTag : public Tag
   {
@@ -377,38 +378,11 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
     m_lastNavStart = Seconds (0);
     m_promisc = false;
     m_sequenceNumber = 0;
+    m_currentSlot = 0;
+    m_angle = 0;
+    // Update slot number when it should be incremented
+    Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::GetCurrentSlot, this);
 
-
-    /*
-    Matrix matrix = Matrix (3,3);
-    matrix.SetValue (0,0,1);
-    matrix.SetValue (0,1,2);
-    matrix.SetValue (0,2,-1);
-
-    matrix.SetValue (1,0,3);
-    matrix.SetValue (1,1,4);
-    matrix.SetValue (1,2,-2);
-
-    matrix.SetValue (2,0,5);
-    matrix.SetValue (2,1,-4);
-    matrix.SetValue (2,2,1);
-
-    matrix.ShowMatrix ();
-
-    Matrix inverse = Matrix (3,3);
-    matrix.Inverse (inverse);
-
-    inverse.ShowMatrix ();
-
-    Matrix product = Matrix (3,3);
-    std::cout<<" before "<< std::endl;
-    matrix.ShowMatrix ();
-    inverse.ShowMatrix ();
-    product.ShowMatrix ();
-    matrix.Product (inverse, product);
-    std::cout<<" after "<< std::endl;
-    product.ShowMatrix ();
-    */
   }
 
   MacLow::~MacLow ()
@@ -715,21 +689,6 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
       WifiMacHeader hdr;
       packet->RemoveHeader (hdr);
 
-      //-----------------------------------------------------
-      uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
-      uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
-      //std::cout<<"copied bytes: "<< copyBytes << std::endl;
-      PayloadBuffer buff = PayloadBuffer (temp);
-      double txPower = buff.ReadDouble ();
-      double rxPower = buff.ReadDouble ();
-      double angle = buff.ReadDouble ();
-      double x = buff.ReadDouble ();
-      double y = buff.ReadDouble ();
-      //std::cout<<" receiving: "<< txPower << " "<< rxPower << " "<<angle <<" "<<x <<" "<< y<< std::endl;
-      //std::cout<<temp<< std::endl;
-      delete [] temp;
-      //---------------------------------------------
-      //
 
       bool isPrevNavZero = IsNavZero ();
       NS_LOG_DEBUG ("duration/id=" << hdr.GetDuration ());
@@ -948,30 +907,64 @@ const uint32_t DEFAULT_PACKET_LENGTH = 100;
       else if (hdr.GetAddr1 ().IsGroup ())
       { 
 
-        //====BROADCAST MESSAGE================
-
-        LinkEstimator linkEstimator;
         uint16_t sender = hdr.GetAddr2 ().GetNodeId ();
         uint16_t receiver = m_self.GetNodeId ();
-        //std::cout<<" receivd sequence number is: "<< hdr.GetSequenceNumber () << std::endl;
-        m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
-        LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
-        //std::cout<<" sequence number size: "<< _item.receivedSequenceNumbers.size () << std::endl;
-        std::cout<<"Time: "<< Simulator::Now ()<<"ns"<<std::endl;
-        for (std::vector<uint32_t>::iterator int32_it = _item.receivedSequenceNumbers.begin ();
-            int32_it != _item.receivedSequenceNumbers.end (); ++ int32_it)
-        {
-          std::cout<<" "<<*int32_it;
-        }
-        std::cout<<std::endl;
-        m_linkEstimator.IsPdrUpdated (sender, receiver, 20); // 20 as window size
+        //-----------------------------------------------------
+        uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
+        uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
+        //std::cout<<"copied bytes: "<< copyBytes << std::endl;
+        PayloadBuffer buff = PayloadBuffer (temp);
+        double txPower = buff.ReadDouble (); // with txGain added
+        double rxPower = buff.ReadDouble (); // with rxGain added
+        double angle = buff.ReadDouble ();
+        double x = buff.ReadDouble ();
+        double y = buff.ReadDouble ();
+        m_txPower = txPower; //dBm
+        uint16_t begin = buff.ReadU16 ();
+        uint16_t end = buff.ReadU16 ();
+
+        //std::cout<<" begin: "<< begin <<" end: "<< end << std::endl;
+        m_signalMap.UpdateVehicleStatus (sender, angle, begin, end);
 
         SignalMapItem signalMapItem;
         signalMapItem.to = m_self.GetNodeId ();
         signalMapItem.from = hdr.GetAddr2 ().GetNodeId ();
         signalMapItem.attenuation = txPower - rxPower;
         signalMapItem.timeStamp = Simulator::Now ();
+        signalMapItem.angle = angle;
+        signalMapItem.begin = begin;
+        signalMapItem.end = end;
         m_signalMap.AddOrUpdate (signalMapItem);
+
+        //m_signalMap.SortAccordingToInComingAttenuation ();
+        m_signalMap.PrintSignalMap (m_self.GetNodeId ());
+
+        uint16_t itemCount = buff.ReadU16 ();
+        std::vector<SignalMapItem> _vec;
+        for (uint16_t i = 0; i < itemCount; ++ i)
+        {
+          SignalMapItem temp; 
+          temp.from = buff.ReadU16 ();
+          temp.to = buff.ReadU16 ();
+          temp.attenuation = buff.ReadU16 () / (double) DBM_AMPLIFY_TIMES;
+          temp.angle = (int16_t)buff.ReadU16 ();
+          temp.begin = buff.ReadU16 ();
+          temp.end = buff.ReadU16 ();
+          temp.exclusionRegion = buff.ReadU16 () / (double) DBM_AMPLIFY_TIMES;
+          _vec.push_back (temp);
+          //std::cout<<" receiving, from: "<< temp.from<<" to: "<< temp.to <<" attenuation: "<< temp.attenuation <<" angle: "<< temp.angle <<" begin: "<< temp.begin <<" end: "<< temp.end <<" exlusion_region: "<< temp.exclusionRegion<< std::endl;
+        }
+        delete [] temp;
+        //---------------------------------------------
+        //
+
+        //====BROADCAST MESSAGE================
+
+        LinkEstimator linkEstimator;
+        m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
+        LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
+        m_linkEstimator.IsPdrUpdated (sender, receiver, 20); // 20 as window size
+
 
         ObservationItem obsItem;
 
@@ -1486,7 +1479,6 @@ rxPacket:
   void
     MacLow::SendDataPacket (void)
     {
-      //std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<<" sending packet "<< std::endl;
       NS_LOG_FUNCTION (this);
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
@@ -1536,6 +1528,39 @@ rxPacket:
       PayloadBuffer buff = PayloadBuffer (payload);
       uint8_t txPowerLevel = 0;//default tx Power level
       buff.WriteDouble ((double)txPowerLevel);
+
+      DirectionDistribution directionDistribution = m_signalMap.GetDirectionDistribution (m_angle);
+      //NodeActiveSlots activeSlots;
+      uint16_t begin, end;
+      GetOwnSlotsInFrame (begin, end, directionDistribution);
+      buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
+      buff.WriteU16 (begin);
+      buff.WriteU16 (end);
+
+      uint32_t remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
+      std::vector<SignalMapItem> _vec;
+      uint16_t itemCount = 0;
+      if (remainBytes > 2)
+      {
+        remainBytes -= 2;
+        itemCount = remainBytes / SIGNAL_MAP_ITEM_SIZE;
+        // everything is in the _vec vector;
+        m_signalMap.GetItemsToShare (_vec, itemCount);
+        buff.WriteU16 ((uint16_t) _vec.size ()); // size;
+        for (uint16_t i = 0; i < _vec.size (); ++ i)
+        {
+          buff.WriteU16 (_vec[i].from);
+          buff.WriteU16 (_vec[i].to);
+          buff.WriteU16 ( (uint16_t)(_vec[i].attenuation * DBM_AMPLIFY_TIMES));
+          buff.WriteU16 ((uint16_t)_vec[i].angle);
+          buff.WriteU16 (_vec[i].begin);
+          buff.WriteU16 (_vec[i].end);
+          buff.WriteU16 ((uint16_t)(_vec[i].exclusionRegion) * DBM_AMPLIFY_TIMES );
+
+          //std::cout<<" sending, from: "<< _vec[i].from<<" to: "<< _vec[i].to <<" attenuation: "<< _vec[i].attenuation <<" angle: "<< _vec[i].angle <<" begin: "<< _vec[i].begin <<" end: "<< _vec[i].end <<" exlusion_region: "<< _vec[i].exclusionRegion<< std::endl;
+        }
+      }
+
       m_currentPacket = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
       //-----------------------------------------------------------
       /*
@@ -1991,6 +2016,38 @@ rxPacket:
     {
       m_edcaListeners.insert (std::make_pair (ac, listener));
     }
+
+  int64_t MacLow::GetCurrentSlot ()
+  {
+    m_currentSlot = Simulator::Now ().GetNanoSeconds () / (SLOT_LENGTH * 1000);
+    return m_currentSlot;
+  }
+
+  void MacLow::SetAngle (double angle)
+  {
+    //std::cout<<" set angle: "<< angle << std::endl;
+    m_angle = angle;
+  }
+
+  void MacLow::GetOwnSlotsInFrame (uint16_t &begin, uint16_t &end, DirectionDistribution directions)
+  {
+    double preSum=0;
+    for (uint32_t i = 0; i < directions.selfSector; ++ i)
+    {
+      preSum += directions.ratio[i];
+    }
+    if ( preSum != 0)
+    {
+      begin = (uint32_t) (preSum * FRAME_LENGTH + 1);
+    }
+    else 
+    {
+      begin = 0;
+    }
+    //std::cout<<" directions.ratio[directions.selfSector]: "<< directions.ratio[directions.selfSector] << std::endl;
+    end = (uint32_t) ((preSum + directions.ratio[directions.selfSector] ) * FRAME_LENGTH);
+    //std::cout<<" directions.selfSector: "<< directions.selfSector <<" begin: "<< begin <<" end: "<< end<< std::endl;
+  }
 
 
 } // namespace ns3

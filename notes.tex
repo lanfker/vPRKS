@@ -1,0 +1,57 @@
+\documentclass[10pt]{article}
+\usepackage[top=1in, bottom=1in, left=1.25in, right=1.25in]{geometry}
+\usepackage[bookmarks=true]{hyperref}
+\usepackage{setspace}
+\usepackage{verbatim}
+\usepackage{cite}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section{Question}
+1. How to get $\Phi_i$ for Kalman filter?????
+
+
+\section {Facts}
+1. What information a packet has to contain:
+\begin{itemize}
+  \item tx power. double
+  \item rx power. double
+  \item travelling angle. Double
+  \item current position (x,y). Two double
+  \item begin sending slot in a frame. uint16\_t
+  \item end sending slot in a frame  uint16\_t
+\end{itemize}
+
+\section {Thoughts}
+1. We should not let vehicles send packets with abnormal high transmission power. This means when constructing signal map, we need message exchange.  Use prediction:
+
+(a) Only store signal attenuation information if packets are succesfully received. 
+
+(b) Use these records to predict path loss netween nearby vehicles that are beyond transmission range.
+
+(c) For predicted values, we should not store them in the observation matrix (vectors), only update them in the signal map.
+
+We are actually using Control channel, and packets in control channel usually has much higher transmission power. As a result, we can create measured signal map beyond normal transmission range. (2014-04-01 Tue 11:44 AM)
+
+\section{To Do}
+%check density of directions of nearby vehicles, allocate slots (by checking direction distribution, we can allocate slots distributedly)
+Maintain active slots in SignalMap. 
+
+\section{How to run the protocol}
+At the very beginning, all vehicles stay in the data channel with initial exclusion region. Our scheduling algorithm tries to schedule vehicles with local maximum priority. 
+Vehicles choose to stay in control channel if no vehicle asks them to stay in data channel. (Here, we need to make sure the message of informing other vehicles to stay in data channel be very reliable) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
