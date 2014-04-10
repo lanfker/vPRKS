@@ -376,6 +376,7 @@ namespace ns3
     channel = CreateObject<YansWifiChannel> ();
  
     factory1.SetTypeId("ns3::LogDistancePropagationLossModel");
+    factory1.Set("Exponent", DoubleValue (1.5));
     channel->SetPropagationLossModel(factory1.Create<PropagationLossModel> ());
 
 #endif

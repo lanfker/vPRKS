@@ -488,6 +488,7 @@ LogDistancePropagationLossModel::DoCalcRxPower (double txPowerDbm,
   double rxc = -m_referenceLoss - pathLossDb;
   NS_LOG_DEBUG ("distance="<<distance<<"m, reference-attenuation="<< -m_referenceLoss<<"dB, "<<
                 "attenuation coefficient="<<rxc<<"db");
+  //std::cout<<" m_referenceLoss: "<< m_referenceLoss <<" exponent: "<< m_exponent <<" m_referenceDistance: "<< m_referenceDistance << std::endl;
   return txPowerDbm + rxc;
 }
 

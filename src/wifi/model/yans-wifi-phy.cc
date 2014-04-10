@@ -407,6 +407,7 @@ switchChannel:
         enum WifiPreamble preamble)
     {
       NS_LOG_FUNCTION (this << packet << rxPowerDbm << txMode << preamble);
+      //std::cout<<" m_edThreshold: "<< WToDbm (m_edThresholdW) << std::endl; // -96 dBm
       rxPowerDbm += m_rxGainDb;
 
       //-------Add rxPower in payload

@@ -104,7 +104,7 @@ namespace ns3
 
     traciClient->commandGetVariableStringList(CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
     m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
-    m_nextEventId = Simulator::Schedule (MilliSeconds (m_random.GetValue (0, DEFAULT_PACKET_LENGTH)), &TraciApplication::GenerateTraffic, this);
+    m_nextEventId = Simulator::Schedule (MilliSeconds (m_random.GetValue (0, PAKCET_GENERATION_INTERVAL)), &TraciApplication::GenerateTraffic, this);
   }
   void TraciApplication::StopApplication (void)
   {

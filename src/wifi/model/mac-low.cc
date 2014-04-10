@@ -937,7 +937,7 @@ namespace ns3 {
         m_signalMap.AddOrUpdate (signalMapItem);
 
         //m_signalMap.SortAccordingToInComingAttenuation ();
-        m_signalMap.PrintSignalMap (m_self.GetNodeId ());
+        //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
 
         uint16_t itemCount = buff.ReadU16 ();
         std::vector<SignalMapItem> _vec;
