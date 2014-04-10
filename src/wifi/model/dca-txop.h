@@ -107,6 +107,9 @@ public:
    */
   void Queue (Ptr<const Packet> packet, const WifiMacHeader &hdr);
 
+  void SetCurrentPacket (WifiMacHeader hdr, Ptr<const Packet> pkt);
+  void SetMaclowListener () const;
+  bool QueueEmpty();
 private:
   class TransmissionListener;
   class NavListener;

@@ -375,6 +375,10 @@ class MacLow : public Object
 {
 public:
   typedef Callback<void, Ptr<Packet>, const WifiMacHeader*> MacLowRxCallback;
+  typedef Callback<void> StartTxCallback;
+  typedef Callback<bool> BooleanCallback;
+  typedef Callback<void> VoidCallback;
+  typedef Callback<void, WifiMacHeader, Ptr<const Packet> > SetPacketCallback;
 
   MacLow ();
   virtual ~MacLow ();
@@ -441,6 +445,7 @@ public:
                           MacLowTransmissionParameters parameters,
                           MacLowTransmissionListener *listener);
 
+  void SetMacLowTransmissionListener (MacLowTransmissionListener *listener);
   /**
    * \param packet packet received
    * \param rxSnr snr of packet received
@@ -506,6 +511,11 @@ public:
   int64_t GetCurrentSlot ();
   void GetOwnSlotsInFrame (uint16_t &begin, uint16_t &end, DirectionDistribution directions);
   void SetAngle (double angle);
+  void SetStartTxCallback (StartTxCallback callback);
+  void SetQueueEmptyCallback (BooleanCallback callback);
+  void SetListenerCallback (VoidCallback callback);
+  void SetDcaTxopPacketCallback (SetPacketCallback callback);
+
 private:
   //-----------------------------------VPRKS----------------------
   uint16_t m_sequenceNumber;
@@ -515,6 +525,10 @@ private:
   double m_txPower;
   int64_t m_currentSlot;
   double m_angle;
+  BooleanCallback m_queueEmptyCallback;
+  StartTxCallback m_startTxCallback;
+  VoidCallback m_setListenerCallback;
+  SetPacketCallback m_setPacketCallback;
 
 
   //----------------------------------End VPRKS-------------------

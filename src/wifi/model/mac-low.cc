@@ -2049,5 +2049,27 @@ rxPacket:
     //std::cout<<" directions.selfSector: "<< directions.selfSector <<" begin: "<< begin <<" end: "<< end<< std::endl;
   }
 
+  void MacLow::SetStartTxCallback (StartTxCallback callback)
+  {
+    m_startTxCallback = callback;
+  }
+  void MacLow::SetQueueEmptyCallback (BooleanCallback callback)
+  {
+    m_queueEmptyCallback = callback;
+  }
+  void MacLow::SetListenerCallback (VoidCallback callback)
+  {
+    m_setListenerCallback = callback;
+  }
+  void MacLow::SetDcaTxopPacketCallback (SetPacketCallback callback)
+  {
+    m_setPacketCallback = callback;
+  }
+
+  void MacLow::SetMacLowTransmissionListener (MacLowTransmissionListener *listener)
+  {
+    m_listener = listener;
+  }
+
 
 } // namespace ns3

@@ -171,7 +171,28 @@ DcaTxop::SetLow (Ptr<MacLow> low)
 {
   NS_LOG_FUNCTION (this << low);
   m_low = low;
+  m_low->SetStartTxCallback (MakeCallback (&DcaTxop::NotifyAccessGranted, this));
+  m_low->SetQueueEmptyCallback (MakeCallback (&DcaTxop::QueueEmpty, this));
+  m_low->SetListenerCallback (MakeCallback (&DcaTxop::SetMaclowListener, this));
+  m_low->SetDcaTxopPacketCallback (MakeCallback (&DcaTxop::SetCurrentPacket, this));
 }
+
+void DcaTxop::SetCurrentPacket (WifiMacHeader hdr, Ptr<const Packet> pkt)
+{
+  m_currentHdr = hdr;
+  m_currentPacket = pkt;
+}
+
+void DcaTxop::SetMaclowListener () const
+{
+  m_low->SetMacLowTransmissionListener (m_transmissionListener);
+}
+
+bool DcaTxop::QueueEmpty()
+{
+  return m_queue->IsEmpty ();
+}
+
 void
 DcaTxop::SetWifiRemoteStationManager (Ptr<WifiRemoteStationManager> remoteManager)
 {
