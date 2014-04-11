@@ -51,6 +51,12 @@ class WifiPhy;
 class WifiMac;
 class EdcaTxopN;
 
+typedef struct NeighborSignalMap
+{
+  uint16_t neighborId;
+  SignalMap signalMap;
+} NeighborSignalMap;
+
 /**
  * \ingroup wifi
  * \brief listen to events coming from ns3::MacLow.
@@ -509,12 +515,17 @@ public:
   void RegisterBlockAckListenerForAc (enum AcIndex ac, MacLowBlockAckEventListener *listener);
 
   int64_t GetCurrentSlot ();
+  int64_t CalculatePriority (uint16_t nodeId);
   void GetOwnSlotsInFrame (uint16_t &begin, uint16_t &end, DirectionDistribution directions);
   void SetAngle (double angle);
   void SetStartTxCallback (StartTxCallback callback);
   void SetQueueEmptyCallback (BooleanCallback callback);
   void SetListenerCallback (VoidCallback callback);
   void SetDcaTxopPacketCallback (SetPacketCallback callback);
+  void CalculateSchedule ();
+  bool IsNeighborSignalMapExisted (uint16_t neighborId);
+  void CreateNeighborSignalMapRecord (uint16_t neighborId);
+  void UpdateNeighborSignalMapRecord (SignalMapItem item);
 
 private:
   //-----------------------------------VPRKS----------------------
@@ -529,6 +540,7 @@ private:
   StartTxCallback m_startTxCallback;
   VoidCallback m_setListenerCallback;
   SetPacketCallback m_setPacketCallback;
+  std::vector<NeighborSignalMap> m_neighborSignalMaps;
 
 
   //----------------------------------End VPRKS-------------------

@@ -42,6 +42,7 @@
 #include "ns3/simulator.h"
 #include "ns3/traci-client.h"
 #include "ns3/road-map-module.h"
+#include "ns3/settings.h"
 //
 // ----- SUMO related includes
 #include <traci-server/TraCIConstants.h>
@@ -384,8 +385,8 @@ namespace ns3
     factory2.SetTypeId("ns3::ConstantSpeedPropagationDelayModel");
     channel->SetPropagationDelayModel(factory2.Create<PropagationDelayModel> ());
     //channel->updateArea(boundaries[0], boundaries[1], communicationRange);
-    phy.Set ("TxPowerStart",  DoubleValue(40));
-    phy.Set ("TxPowerEnd",  DoubleValue(40));
+    phy.Set ("TxPowerStart",  DoubleValue(DEFAULT_POWER));
+    phy.Set ("TxPowerEnd",  DoubleValue(DEFAULT_POWER));
     phy.SetChannel(channel);
 
   }

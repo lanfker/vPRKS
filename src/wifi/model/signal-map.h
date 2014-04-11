@@ -2,6 +2,7 @@
 #define SIGNAL_MAP_H
 
 #include "ns3/core-module.h"
+#include <set>
 
 
 namespace ns3{
@@ -21,7 +22,7 @@ namespace ns3{
     double angle;
     uint16_t begin; // record active slot for 'from'
     uint16_t end; // record active slot fro 'from'
-    double exclusionRegion;
+    double exclusionRegion;// dBm
   }SignalMapItem;
   class SignalMap: public Object
   {
@@ -44,6 +45,10 @@ namespace ns3{
       Iterator begin () { return m_signalMap.begin ();}
       Iterator end () {return m_signalMap.end ();}
       void UpdateVehicleStatus (uint16_t from, double angle, uint16_t beign, uint16_t end);
+      double GetLinkExclusionRegionValue (uint16_t to, uint16_t from); // to is the receiver, from is the sender
+      // additively add neighbors to the set @vec since we are using STL set
+      void GetNodesInExclusionRegion (uint16_t to, double exclusionRegion, std::set<uint16_t> &vec);
+      void GetOneHopNeighbors (double thresholdDbm, std::vector<uint16_t> &vec);
     private:
       std::vector<SignalMapItem> m_signalMap;
 

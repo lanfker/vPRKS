@@ -34,11 +34,15 @@ Maintain a vehicle active time (When the vehicle enters our simulation)
 
 (a) Only store signal attenuation information if packets are succesfully received. 
 
-(b) Use these records to predict path loss netween nearby vehicles that are beyond transmission range.
+(b) Use these records to predict path loss between nearby vehicles that are beyond transmission range.
 
 (c) For predicted values, we should not store them in the observation matrix (vectors), only update them in the signal map.
 
 We are actually using Control channel, and packets in control channel usually has much higher transmission power. As a result, we can create measured signal map beyond normal transmission range. (2014-04-01 Tue 11:44 AM)
+
+Exclusion region is shared based a each link. A node has to compute the union of all its intended receiver's ER's. How to inform them?
+
+How to decide if a node should stay in data channel? 1) If another explicitly tells the node to stay in data channel; 2) The node with the maximum priority within its union ER is a one-hop neighbor.
 
 
 \section{How to run the protocol}

@@ -2,6 +2,7 @@
 #include "ns3/log.h"
 #include <iostream>
 #include <algorithm>
+#include <set>
 
 NS_LOG_COMPONENT_DEFINE ("SignalMap");
 
@@ -196,4 +197,58 @@ namespace ns3
       }
     } 
   }
+
+  double SignalMap::GetLinkExclusionRegionValue (uint16_t to, uint16_t from)
+  {
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      if (from == it->from && to == it->to)
+      {
+        return it->exclusionRegion;
+      }
+    }
+    return 0;
+  }
+
+  void SignalMap::GetNodesInExclusionRegion (uint16_t to, double exclusionRegion, std::set<uint16_t> &vec)
+  {
+    //need check expiration????
+    SortAccordingToAttenuation ();
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      if (it->to == to)
+      {
+        if ( DEFAULT_POWER - it->attenuation <= exclusionRegion)
+        {
+          //vec.push_back (it->from);
+          vec.insert (it->from);
+        }
+        else
+        {
+          break;
+        }
+      }
+      else
+      {
+        break;
+      }
+    }
+  }
+
+  void SignalMap::GetOneHopNeighbors (double thresholdDbm, std::vector<uint16_t> &vec)
+  {
+    SortAccordingToAttenuation ();
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      if ( DEFAULT_POWER - it->attenuation <= thresholdDbm)
+      {
+        vec.push_back (it->from);
+      }
+      else
+      {
+        break;
+      }
+    }
+  }
+
 }

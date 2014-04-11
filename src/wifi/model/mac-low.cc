@@ -41,6 +41,7 @@
 #include "double-regression.h"
 #include "link-estimator.h"
 #include "ns3/settings.h"
+#include <cstdlib>
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -50,7 +51,7 @@ NS_LOG_COMPONENT_DEFINE ("MacLow");
 
 
 namespace ns3 {
-//const uint32_t DEFAULT_PACKET_LENGTH = 100;
+  //const uint32_t DEFAULT_PACKET_LENGTH = 100;
 
   class SnrTag : public Tag
   {
@@ -640,7 +641,9 @@ namespace ns3 {
       }
       else
       {
-        SendDataPacket ();
+        CalculateSchedule (); 
+        // Here we control how packets need to be sent.
+        //SendDataPacket ();
       }
 
       /* When this method completes, we have taken ownership of the medium. */
@@ -955,6 +958,16 @@ namespace ns3 {
           //std::cout<<" receiving, from: "<< temp.from<<" to: "<< temp.to <<" attenuation: "<< temp.attenuation <<" angle: "<< temp.angle <<" begin: "<< temp.begin <<" end: "<< temp.end <<" exlusion_region: "<< temp.exclusionRegion<< std::endl;
         }
         delete [] temp;
+        for (std::vector<SignalMapItem>::iterator it = _vec.begin (); it != _vec.end (); ++ it)
+        {
+          bool createNew = IsNeighborSignalMapExisted (it->to);
+          if ( createNew == true )
+          {
+            CreateNeighborSignalMapRecord (it->to);
+          }
+
+
+        }
         //---------------------------------------------
         //
 
@@ -986,7 +999,7 @@ namespace ns3 {
         obsItem.timeStamp = Simulator::Now ();
         m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
         //std::cout<<"observation link count: "<< m_observation.FindLinkCount () <<" minimum observation: "
-          //<< m_observation.FindMinimumObservationLength () << std::endl;
+        //<< m_observation.FindMinimumObservationLength () << std::endl;
         m_observation.RemoveExpireItems (Seconds(10), 10);
         uint32_t obs_count = m_observation.FindLinkCount ();
         if ( obs_count > 1)
@@ -1002,7 +1015,7 @@ namespace ns3 {
           //std::cout<<" coefficients are: "<< std::endl;
           //betaMatrix.ShowMatrix ();
         }
-        
+
         //m_observation.PrintObservations ();
         //std::cout<<m_self.GetNodeId () <<" signal map size: "<< m_signalMap.GetSize () << std::endl;
         //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
@@ -1544,6 +1557,7 @@ rxPacket:
       {
         remainBytes -= 2;
         itemCount = remainBytes / SIGNAL_MAP_ITEM_SIZE;
+        std::cout<<" itemCount: "<< itemCount << std::endl;
         // everything is in the _vec vector;
         m_signalMap.GetItemsToShare (_vec, itemCount);
         buff.WriteU16 ((uint16_t) _vec.size ()); // size;
@@ -2071,5 +2085,56 @@ rxPacket:
     m_listener = listener;
   }
 
+  int64_t MacLow::CalculatePriority (uint16_t nodeId)
+  {
+    int64_t slot = GetCurrentSlot ();
+    int64_t seed = nodeId * 10000 + slot;
+    srand (seed);
+    int64_t priority = rand () * 10000 + nodeId;
+    return abs (priority);
+  }
 
+  void MacLow::CalculateSchedule ()
+  {
+    if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
+    {
+    }
+    else
+    {
+      SendDataPacket ();
+    }
+  }
+
+  bool MacLow::IsNeighborSignalMapExisted (uint16_t neighborId)
+  {
+    for (std::vector<NeighborSignalMap>::iterator it = m_neighborSignalMaps.begin ();
+        it != m_neighborSignalMaps.end (); ++ it)
+    {
+      if (it->neighborId == neighborId)
+        return true;
+    }
+    return false;
+  }
+
+  //call  IsNeighborSignalMapExisted first
+  void MacLow::CreateNeighborSignalMapRecord (uint16_t neighborId)
+  {
+    NeighborSignalMap neighborSignalMap;
+    neighborSignalMap.neighborId = neighborId;
+    m_neighborSignalMaps.push_back (neighborSignalMap);
+  }
+
+
+  void MacLow::UpdateNeighborSignalMapRecord (SignalMapItem item)
+  {
+    for (std::vector<NeighborSignalMap>::iterator it = m_neighborSignalMaps.begin ();
+        it != m_neighborSignalMaps.end (); ++ it)
+    {
+      if ( it->neighborId == item.to)
+      {
+        it->signalMap.AddOrUpdate (item);
+        break;
+      }
+    }
+  }
 } // namespace ns3
