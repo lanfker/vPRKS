@@ -961,12 +961,19 @@ namespace ns3 {
         for (std::vector<SignalMapItem>::iterator it = _vec.begin (); it != _vec.end (); ++ it)
         {
           bool createNew = IsNeighborSignalMapExisted (it->to);
-          if ( createNew == true )
+          if ( createNew == false )
           {
             CreateNeighborSignalMapRecord (it->to);
           }
 
+          UpdateNeighborSignalMapRecord (*it);
+        }
 
+        for (std::vector<NeighborSignalMap>::iterator it = m_neighborSignalMaps.begin ();
+            it != m_neighborSignalMaps.end (); ++ it)
+        {
+          std::cout<<" signal map for: "<< it->neighborId <<"  from: "<< m_self.GetNodeId () << std::endl;
+          it->signalMap.PrintSignalMap (it->neighborId);
         }
         //---------------------------------------------
         //
@@ -1557,7 +1564,7 @@ rxPacket:
       {
         remainBytes -= 2;
         itemCount = remainBytes / SIGNAL_MAP_ITEM_SIZE;
-        std::cout<<" itemCount: "<< itemCount << std::endl;
+        //std::cout<<" itemCount: "<< itemCount << std::endl;
         // everything is in the _vec vector;
         m_signalMap.GetItemsToShare (_vec, itemCount);
         buff.WriteU16 ((uint16_t) _vec.size ()); // size;
@@ -2096,12 +2103,30 @@ rxPacket:
 
   void MacLow::CalculateSchedule ()
   {
+    //DATA CHANNEL 1
     if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
     {
     }
     else
     {
       SendDataPacket ();
+    }
+
+    //=================================if in control channel===========
+    std::vector<uint16_t> neighbors;
+    m_signalMap.GetOneHopNeighbors (fabs (LINK_SELECTION_THRESHOLD), neighbors);
+    if (neighbors.size () > 0)
+    {
+      double maxExclusionRegion = 0;
+      for (std::vector<uint16_t>::iterator it = neighbors.begin (); it != neighbors.end (); ++ it)
+      { 
+        double tempExclusionRegion = m_signalMap.GetLinkExclusionRegionValue (m_self.GetNodeId (), *it);
+        if ( maxExclusionRegion >= tempExclusionRegion)
+        {
+          maxExclusionRegion = tempExclusionRegion;
+        }
+      }
+      //======================== POWER control for control signal =================
     }
   }
 

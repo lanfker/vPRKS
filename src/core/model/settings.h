@@ -9,6 +9,8 @@ const double LINK_SELECTION_THRESHOLD = -86; //dBM
 const uint16_t DBM_AMPLIFY_TIMES = 300;
 const uint8_t DEFAULT_POWER=40; //dBm
 const int64_t START_PROCESS_TIME = 150; //seconds
+const uint32_t DATA_CHANNEL = 1;
+const uint32_t CONTROL_CHANNEL = 2;
 
 const uint32_t MAX_RANDOM_SEED = 100;
 const uint32_t MAX_RUN_NUMBER = 200;
