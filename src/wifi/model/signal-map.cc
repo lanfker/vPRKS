@@ -100,7 +100,7 @@ namespace ns3
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
       std::cout<<"from: "<<it->from<<" to: "<<it->to <<" Atten: "<< it->attenuation <<" timestamp: "<< it->timeStamp 
-        <<" angle: "<< it->angle <<" begin: "<< it->begin <<" end: "<< it->end << std::endl;
+        <<" angle: "<< it->angle <<" begin: "<< it->begin <<" end: "<< it->end<<" exclusionRegion: "<< it->exclusionRegion << std::endl;
     }
     std::cout<<"--------------------------------------------------"<< std::endl;
   }
@@ -240,7 +240,7 @@ namespace ns3
     SortAccordingToAttenuation ();
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
-      if ( DEFAULT_POWER - it->attenuation <= thresholdDbm)
+      if ( DEFAULT_POWER - it->attenuation >= thresholdDbm)
       {
         vec.push_back (it->from);
       }

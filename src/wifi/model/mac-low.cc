@@ -912,6 +912,8 @@ namespace ns3 {
 
         uint16_t sender = hdr.GetAddr2 ().GetNodeId ();
         uint16_t receiver = m_self.GetNodeId ();
+        Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
+        Vector position = selfMobilityModel -> GetPosition ();
         //-----------------------------------------------------
         uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
         uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
@@ -925,6 +927,9 @@ namespace ns3 {
         m_txPower = txPower; //dBm
         uint16_t begin = buff.ReadU16 ();
         uint16_t end = buff.ReadU16 ();
+        //double xdifference = x - position.x;
+        //double ydifference = y - position.y;
+        //std::cout<<" how many meters away: " << sqrt ( xdifference*xdifference + ydifference*ydifference)<< std::endl;
 
         //std::cout<<" begin: "<< begin <<" end: "<< end << std::endl;
         m_signalMap.UpdateVehicleStatus (sender, angle, begin, end);
@@ -954,6 +959,7 @@ namespace ns3 {
           temp.begin = buff.ReadU16 ();
           temp.end = buff.ReadU16 ();
           temp.exclusionRegion = buff.ReadU16 () / (double) DBM_AMPLIFY_TIMES;
+          temp.timeStamp = Simulator::Now ();
           _vec.push_back (temp);
           //std::cout<<" receiving, from: "<< temp.from<<" to: "<< temp.to <<" attenuation: "<< temp.attenuation <<" angle: "<< temp.angle <<" begin: "<< temp.begin <<" end: "<< temp.end <<" exlusion_region: "<< temp.exclusionRegion<< std::endl;
         }
@@ -972,8 +978,8 @@ namespace ns3 {
         for (std::vector<NeighborSignalMap>::iterator it = m_neighborSignalMaps.begin ();
             it != m_neighborSignalMaps.end (); ++ it)
         {
-          std::cout<<" signal map for: "<< it->neighborId <<"  from: "<< m_self.GetNodeId () << std::endl;
-          it->signalMap.PrintSignalMap (it->neighborId);
+          //std::cout<<" signal map for: "<< it->neighborId <<"  from: "<< m_self.GetNodeId () << std::endl;
+          //it->signalMap.PrintSignalMap (it->neighborId);
         }
         //---------------------------------------------
         //
@@ -988,23 +994,14 @@ namespace ns3 {
 
         ObservationItem obsItem;
 
-        /*
-           double senderX;
-           double senderY;
-           double receiverX;
-           double receiverY;
-           double averageAttenuation;
-           Time timeStamp;
-           */
         obsItem.senderX = x;
         obsItem.senderY = y;
-        Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
-        Vector position = selfMobilityModel -> GetPosition ();
         obsItem.receiverX =  position.x;
         obsItem.receiverY =  position.y;
         obsItem.averageAttenuation = txPower - rxPower;
         obsItem.timeStamp = Simulator::Now ();
         m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
+
         //std::cout<<"observation link count: "<< m_observation.FindLinkCount () <<" minimum observation: "
         //<< m_observation.FindMinimumObservationLength () << std::endl;
         m_observation.RemoveExpireItems (Seconds(10), 10);
@@ -1023,11 +1020,6 @@ namespace ns3 {
           //betaMatrix.ShowMatrix ();
         }
 
-        //m_observation.PrintObservations ();
-        //std::cout<<m_self.GetNodeId () <<" signal map size: "<< m_signalMap.GetSize () << std::endl;
-        //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
-        //std::cout<<" going to add, from: "<< signalMapItem.from <<" to: "<< signalMapItem.to << std::endl;
-        //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
         if (hdr.IsData () || hdr.IsMgt ())
         {
           NS_LOG_DEBUG ("rx group from=" << hdr.GetAddr2 ());
@@ -1320,7 +1312,38 @@ rxPacket:
           ", mode=" << txMode <<
           ", duration=" << hdr->GetDuration () <<
           ", seq=0x" << std::hex << m_currentHdr.GetSequenceControl () << std::dec);
-      m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, 0);
+
+      if (m_phy->GetChannelNumber () == CONTROL_CHANNEL )
+      {
+        //=================================if in control channel===========
+        std::vector<uint16_t> neighbors;
+        m_signalMap.GetOneHopNeighbors (LINK_SELECTION_THRESHOLD, neighbors);
+        if (neighbors.size () > 0)
+        {
+          double maxExclusionRegion = 0;
+          for (std::vector<uint16_t>::iterator it = neighbors.begin (); it != neighbors.end (); ++ it)
+          { 
+            double tempExclusionRegion = m_signalMap.GetLinkExclusionRegionValue (m_self.GetNodeId (), *it);
+            if ( maxExclusionRegion >= tempExclusionRegion)
+            {
+              maxExclusionRegion = tempExclusionRegion;
+            }
+          }
+          uint32_t txPower=0;
+          double attenuation = DEFAULT_POWER - maxExclusionRegion;
+          txPower = (uint32_t)attenuation + DELIVERY_100_SNR;
+          txPower = txPower - DEFAULT_POWER;
+          //std::cout<<" txPowerLevel: "<< txPower << std::endl;
+          m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, (uint8_t) txPower);
+          //======================== POWER control for control signal =================
+        }
+        else
+          m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, 0);
+      }
+      else if (m_phy->GetChannelNumber () == DATA_CHANNEL )
+      {
+        m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, 0);
+      }
     }
 
   void
@@ -2106,28 +2129,35 @@ rxPacket:
     //DATA CHANNEL 1
     if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
     {
+      std::vector<uint16_t> oneHop;
+      std::set<uint16_t> unitedExclusionRegion;
+      m_signalMap.GetOneHopNeighbors (LINK_SELECTION_THRESHOLD, oneHop);
+      for (std::vector<uint16_t>::iterator it = oneHop.begin (); it != oneHop.end (); ++ it)
+      {
+        SignalMap signalMap = GetSignalMapLocalCopy (*it); 
+        if (signalMap.GetSize () > 0)
+        {
+          double exclusionRegion = m_signalMap.GetLinkExclusionRegionValue (*it, m_self.GetNodeId ()); 
+          signalMap.GetNodesInExclusionRegion (*it, exclusionRegion, unitedExclusionRegion);
+          unitedExclusionRegion.insert (m_self.GetNodeId ());
+        }
+      }
+      /*
+      std::cout<<" unitedExclusionRegion.size : "<< unitedExclusionRegion.size () << std::endl;
+      for (std::set<uint16_t>::iterator it = unitedExclusionRegion.begin (); it != unitedExclusionRegion.end (); ++ it)
+      {
+        std::cout<<" "<<*it;
+      }
+      std::cout<<endl;
+      */
+      SendDataPacket ();
+
     }
     else
     {
       SendDataPacket ();
     }
 
-    //=================================if in control channel===========
-    std::vector<uint16_t> neighbors;
-    m_signalMap.GetOneHopNeighbors (fabs (LINK_SELECTION_THRESHOLD), neighbors);
-    if (neighbors.size () > 0)
-    {
-      double maxExclusionRegion = 0;
-      for (std::vector<uint16_t>::iterator it = neighbors.begin (); it != neighbors.end (); ++ it)
-      { 
-        double tempExclusionRegion = m_signalMap.GetLinkExclusionRegionValue (m_self.GetNodeId (), *it);
-        if ( maxExclusionRegion >= tempExclusionRegion)
-        {
-          maxExclusionRegion = tempExclusionRegion;
-        }
-      }
-      //======================== POWER control for control signal =================
-    }
   }
 
   bool MacLow::IsNeighborSignalMapExisted (uint16_t neighborId)
@@ -2158,8 +2188,23 @@ rxPacket:
       if ( it->neighborId == item.to)
       {
         it->signalMap.AddOrUpdate (item);
+        it->signalMap.SortAccordingToAttenuation ();
         break;
       }
     }
+  }
+
+  SignalMap MacLow::GetSignalMapLocalCopy (uint16_t neighborId)
+  {
+    for (std::vector<NeighborSignalMap>::iterator it = m_neighborSignalMaps.begin ();
+        it != m_neighborSignalMaps.end (); ++ it)
+    {
+      if (it->neighborId == neighborId)
+      {
+        return it->signalMap;
+      }
+    }
+    SignalMap s;
+    return s;
   }
 } // namespace ns3

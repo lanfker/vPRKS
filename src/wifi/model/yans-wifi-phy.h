@@ -141,6 +141,7 @@ public:
   virtual double CalculateSnr (WifiMode txMode, double ber) const;
   virtual Ptr<WifiChannel> GetChannel (void) const;
   virtual void ConfigureStandard (enum WifiPhyStandard standard);
+  Time GetSwithcingDelay ();
 
 private:
   YansWifiPhy (const YansWifiPhy &o);

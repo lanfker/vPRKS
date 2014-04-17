@@ -386,7 +386,9 @@ namespace ns3
     channel->SetPropagationDelayModel(factory2.Create<PropagationDelayModel> ());
     //channel->updateArea(boundaries[0], boundaries[1], communicationRange);
     phy.Set ("TxPowerStart",  DoubleValue(DEFAULT_POWER));
-    phy.Set ("TxPowerEnd",  DoubleValue(DEFAULT_POWER));
+    phy.Set ("TxPowerEnd",  DoubleValue(DEFAULT_POWER + 1));
+    phy.Set ("TxPowerLevels", UintegerValue (2));
+    phy.Set ("ChannelNumber", UintegerValue (CONTROL_CHANNEL));
     phy.SetChannel(channel);
 
   }

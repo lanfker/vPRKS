@@ -836,4 +836,9 @@ maybeCcaBusy:
         m_state->SwitchFromRxEndError (packet, snrPer.snr);
       }
     }
+
+  Time YansWifiPhy::GetSwithcingDelay ()
+  {
+    return m_channelSwitchDelay;
+  }
 } // namespace ns3

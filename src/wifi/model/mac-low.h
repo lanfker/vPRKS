@@ -526,6 +526,7 @@ public:
   bool IsNeighborSignalMapExisted (uint16_t neighborId);
   void CreateNeighborSignalMapRecord (uint16_t neighborId);
   void UpdateNeighborSignalMapRecord (SignalMapItem item);
+  SignalMap GetSignalMapLocalCopy (uint16_t neighborId);
 
 private:
   //-----------------------------------VPRKS----------------------
