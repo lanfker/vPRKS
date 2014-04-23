@@ -44,6 +44,8 @@
 #include "block-ack-cache.h"
 #include "observation.h"
 #include "link-estimator.h"
+#include "exclusion-region-helper.h"
+#include "controller.h"
 
 namespace ns3 {
 
@@ -518,6 +520,7 @@ public:
   int64_t CalculatePriority (uint16_t nodeId);
   void GetOwnSlotsInFrame (uint16_t &begin, uint16_t &end, DirectionDistribution directions);
   void SetAngle (double angle);
+  void SetPosition (double x, double y);
   void SetStartTxCallback (StartTxCallback callback);
   void SetQueueEmptyCallback (BooleanCallback callback);
   void SetListenerCallback (VoidCallback callback);
@@ -527,6 +530,8 @@ public:
   void CreateNeighborSignalMapRecord (uint16_t neighborId);
   void UpdateNeighborSignalMapRecord (SignalMapItem item);
   SignalMap GetSignalMapLocalCopy (uint16_t neighborId);
+  void CollectConflictingNodes (std::vector<uint16_t> &vec);
+  bool IsSelfMaximum (std::vector<uint16_t> conflictSet);
 
 private:
   //-----------------------------------VPRKS----------------------
@@ -537,11 +542,16 @@ private:
   double m_txPower;
   int64_t m_currentSlot;
   double m_angle;
+  double m_positionX;
+  double m_positionY;
+  uint16_t m_begin, m_end;
   BooleanCallback m_queueEmptyCallback;
   StartTxCallback m_startTxCallback;
   VoidCallback m_setListenerCallback;
   SetPacketCallback m_setPacketCallback;
   std::vector<NeighborSignalMap> m_neighborSignalMaps;
+  LinkExclusionRegion m_exclusionRegionHelper;
+  MinimumVarianceController m_minimumVarianceController;
 
 
   //----------------------------------End VPRKS-------------------

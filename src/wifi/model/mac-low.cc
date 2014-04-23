@@ -42,6 +42,8 @@
 #include "link-estimator.h"
 #include "ns3/settings.h"
 #include <cstdlib>
+#include "exclusion-region-helper.h"
+#include "controller.h"
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -630,6 +632,7 @@ namespace ns3 {
       m_listener = listener;
       m_txParams = params;
 
+
       //NS_ASSERT (m_phy->IsStateIdle ());
 
       NS_LOG_DEBUG ("startTx size=" << GetSize (m_currentPacket, &m_currentHdr) <<
@@ -683,6 +686,7 @@ namespace ns3 {
   void
     MacLow::ReceiveOk (Ptr<Packet> packet, double rxSnr, WifiMode txMode, WifiPreamble preamble)
     {
+      //std::cout<<"node: "<< m_self.GetNodeId () << " is receiving packet" << std::endl;
       NS_LOG_FUNCTION (this << packet << rxSnr << txMode << preamble);
       /* A packet is received from the PHY.
        * When we have handled this packet,
@@ -691,6 +695,37 @@ namespace ns3 {
        */
       WifiMacHeader hdr;
       packet->RemoveHeader (hdr);
+
+      uint16_t sender = hdr.GetAddr2 ().GetNodeId ();
+      uint16_t receiver = m_self.GetNodeId ();
+      Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
+      Vector position = selfMobilityModel -> GetPosition ();
+      //-----------------------------------------------------
+      uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
+      uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
+      //std::cout<<"copied bytes: "<< copyBytes << std::endl;
+      PayloadBuffer buff = PayloadBuffer (temp);
+      double txPower = buff.ReadDouble (); // with txGain added
+      double rxPower = buff.ReadDouble (); // with rxGain added
+      double angle = buff.ReadDouble ();
+      double x = buff.ReadDouble ();
+      double y = buff.ReadDouble ();
+      m_txPower = txPower; //dBm
+      uint16_t begin = buff.ReadU16 ();
+      uint16_t end = buff.ReadU16 ();
+      m_signalMap.UpdateVehicleStatus (sender, angle, begin, end);
+
+      SignalMapItem signalMapItem;
+      signalMapItem.to = m_self.GetNodeId ();
+      signalMapItem.from = hdr.GetAddr2 ().GetNodeId ();
+      signalMapItem.attenuation = txPower - rxPower;
+      signalMapItem.timeStamp = Simulator::Now ();
+      signalMapItem.angle = angle;
+      signalMapItem.begin = begin;
+      signalMapItem.end = end;
+      m_signalMap.AddOrUpdate (signalMapItem);
+      Simulator::UpdateSignalMap (m_self.GetNodeId (), m_signalMap.GetSignalMap ());
+      //Simulator::PrintSignalMaps(m_self.GetNodeId ());
 
 
       bool isPrevNavZero = IsNavZero ();
@@ -910,44 +945,31 @@ namespace ns3 {
       else if (hdr.GetAddr1 ().IsGroup ())
       { 
 
-        uint16_t sender = hdr.GetAddr2 ().GetNodeId ();
-        uint16_t receiver = m_self.GetNodeId ();
-        Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
-        Vector position = selfMobilityModel -> GetPosition ();
-        //-----------------------------------------------------
-        uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
-        uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
-        //std::cout<<"copied bytes: "<< copyBytes << std::endl;
-        PayloadBuffer buff = PayloadBuffer (temp);
-        double txPower = buff.ReadDouble (); // with txGain added
-        double rxPower = buff.ReadDouble (); // with rxGain added
-        double angle = buff.ReadDouble ();
-        double x = buff.ReadDouble ();
-        double y = buff.ReadDouble ();
-        m_txPower = txPower; //dBm
-        uint16_t begin = buff.ReadU16 ();
-        uint16_t end = buff.ReadU16 ();
-        //double xdifference = x - position.x;
-        //double ydifference = y - position.y;
-        //std::cout<<" how many meters away: " << sqrt ( xdifference*xdifference + ydifference*ydifference)<< std::endl;
-
-        //std::cout<<" begin: "<< begin <<" end: "<< end << std::endl;
-        m_signalMap.UpdateVehicleStatus (sender, angle, begin, end);
-
-        SignalMapItem signalMapItem;
-        signalMapItem.to = m_self.GetNodeId ();
-        signalMapItem.from = hdr.GetAddr2 ().GetNodeId ();
-        signalMapItem.attenuation = txPower - rxPower;
-        signalMapItem.timeStamp = Simulator::Now ();
-        signalMapItem.angle = angle;
-        signalMapItem.begin = begin;
-        signalMapItem.end = end;
-        m_signalMap.AddOrUpdate (signalMapItem);
 
         //m_signalMap.SortAccordingToInComingAttenuation ();
         //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
 
         uint16_t itemCount = buff.ReadU16 ();
+        std::vector<ObservationItem> tempVec;
+        //std::cout<<" receive_count: "<< itemCount<< std::endl;
+        for (uint16_t i = 0; i < itemCount; ++ i)
+        {
+          ObservationItem temp;
+          temp.sender = buff.ReadU16 ();
+          temp.receiver = buff.ReadU16 ();
+          temp.senderX = buff.ReadDouble ();
+          temp.senderY = buff.ReadDouble ();
+          temp.receiverX = buff.ReadDouble ();
+          temp.receiverY = buff.ReadDouble ();
+          temp.averageAttenuation = buff.ReadDouble ();
+          temp.timeStamp = Simulator::Now ();
+          //std::cout<<"sender: "<<temp.sender <<" receiver: "<< temp.receiver <<" senderX: "<< temp.senderX <<
+            //" senderY: "<< temp.senderY <<" receiverX: "<< temp.receiverX <<" receiverY: "<< temp.receiverY<<
+            //" averageAtten: "<< temp.averageAttenuation << std::endl;
+          m_observation.AppendObservation (temp.sender, temp.receiver, temp);
+        }
+        //std::cout<<"AT vehicle: "<<m_self.GetNodeId ()<< std::endl;
+        //m_observation.PrintObservations ();
         std::vector<SignalMapItem> _vec;
         for (uint16_t i = 0; i < itemCount; ++ i)
         {
@@ -961,7 +983,6 @@ namespace ns3 {
           temp.exclusionRegion = buff.ReadU16 () / (double) DBM_AMPLIFY_TIMES;
           temp.timeStamp = Simulator::Now ();
           _vec.push_back (temp);
-          //std::cout<<" receiving, from: "<< temp.from<<" to: "<< temp.to <<" attenuation: "<< temp.attenuation <<" angle: "<< temp.angle <<" begin: "<< temp.begin <<" end: "<< temp.end <<" exlusion_region: "<< temp.exclusionRegion<< std::endl;
         }
         delete [] temp;
         for (std::vector<SignalMapItem>::iterator it = _vec.begin (); it != _vec.end (); ++ it)
@@ -975,12 +996,6 @@ namespace ns3 {
           UpdateNeighborSignalMapRecord (*it);
         }
 
-        for (std::vector<NeighborSignalMap>::iterator it = m_neighborSignalMaps.begin ();
-            it != m_neighborSignalMaps.end (); ++ it)
-        {
-          //std::cout<<" signal map for: "<< it->neighborId <<"  from: "<< m_self.GetNodeId () << std::endl;
-          //it->signalMap.PrintSignalMap (it->neighborId);
-        }
         //---------------------------------------------
         //
 
@@ -990,6 +1005,11 @@ namespace ns3 {
         m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
         LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
         m_linkEstimator.IsPdrUpdated (sender, receiver, 20); // 20 as window size
+
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // need dela_interference;
+        //m_minimumVarianceController.GetDeltaInterference (double desiredPdr, double ewmaCurrentPdr, double estimatedCurrentPdr, bool &conditionTwoMeet)
+        //double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (m_signalMap, deltaInterference, sender, receiver, DEFAULT_POWER);
 
 
         ObservationItem obsItem;
@@ -1002,23 +1022,20 @@ namespace ns3 {
         obsItem.timeStamp = Simulator::Now ();
         m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
 
-        //std::cout<<"observation link count: "<< m_observation.FindLinkCount () <<" minimum observation: "
         //<< m_observation.FindMinimumObservationLength () << std::endl;
-        m_observation.RemoveExpireItems (Seconds(10), 10);
-        uint32_t obs_count = m_observation.FindLinkCount ();
-        if ( obs_count > 1)
+        m_observation.RemoveExpireItems (Seconds(OBSERVATION_EXPIRATION_TIME), MAX_OBSERVATION_ITEMS_PER_LINK);
+
+        if ( m_self.GetNodeId () == 3)
         {
-          DoubleRegression doubleRegression;
-          Matrix phi = Matrix(obs_count, 4);
-          Matrix pathLoss = Matrix (obs_count, 1);
-          doubleRegression.Initialize (m_observation, phi, pathLoss);
-          //phi.ShowMatrix ();
-          //pathLoss.ShowMatrix ();
-          Matrix  betaMatrix = Matrix (4,1);
-          doubleRegression.GetCoefficientBeta (betaMatrix, phi, pathLoss);
-          //std::cout<<" coefficients are: "<< std::endl;
-          //betaMatrix.ShowMatrix ();
+          DoubleRegression doubleRegresion;
+          NodeStatus senderStatus = Simulator::GetNodeStatus (1);
+          NodeStatus receiverStatus = Simulator::GetNodeStatus (2);
+
+          double at = doubleRegresion.AttenuationEstimation (senderStatus.x, senderStatus.y, receiverStatus.x, receiverStatus.y, m_observation);
+          std::cout<<"atten: "<< at <<" tx_x: "<< senderStatus.x<<" tx_y: "<< senderStatus.y<<
+            " rx_x: "<< receiverStatus.x<<" rx_y: "<< receiverStatus.y<< std::endl;
         }
+
 
         if (hdr.IsData () || hdr.IsMgt ())
         {
@@ -1574,13 +1591,53 @@ rxPacket:
 
       DirectionDistribution directionDistribution = m_signalMap.GetDirectionDistribution (m_angle);
       //NodeActiveSlots activeSlots;
-      uint16_t begin, end;
-      GetOwnSlotsInFrame (begin, end, directionDistribution);
+      GetOwnSlotsInFrame (m_begin, m_end, directionDistribution);
       buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
-      buff.WriteU16 (begin);
-      buff.WriteU16 (end);
+      buff.WriteU16 (m_begin);
+      buff.WriteU16 (m_end);
+      //Updating Node Status============
+      NodeStatus status;
+      status.nodeId = m_self.GetNodeId ();
+      status.begin = m_begin;
+      status.end = m_end;
+      status.angle = m_angle;
+      status.x = m_positionX;
+      status.y = m_positionY;
+      Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
+      //Simulator::PrintNodeStatus (m_self.GetNodeId ());
 
       uint32_t remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
+      //=============================Share observations===========================================
+      m_observation.RemoveExpireItems (Seconds(OBSERVATION_EXPIRATION_TIME), MAX_OBSERVATION_ITEMS_PER_LINK);
+      std::vector<ObservationItem> vec = m_observation.FetchLinkObservationByReceiver (m_self.GetNodeId ());
+      if ( remainBytes > 2)
+      {
+        remainBytes -= 2;
+        uint32_t itemCount = remainBytes / (sizeof (double)*5 + 4);
+        if ( itemCount > vec.size ())
+        {
+          buff.WriteU16( (uint16_t) vec.size ());
+          itemCount = vec.size ();
+        }
+        else if ( itemCount <= vec.size ())
+        {
+          buff.WriteU16 ((uint16_t)itemCount);
+        }
+
+        //std::cout<<" send_count: "<< itemCount<< std::endl;
+        for (int i = 0; i < itemCount; ++ i)
+        {
+          buff.WriteU16 (vec[i].sender);
+          buff.WriteU16 (vec[i].receiver);
+          buff.WriteDouble (vec[i].senderX);
+          buff.WriteDouble (vec[i].senderY);
+          buff.WriteDouble (vec[i].receiverX);
+          buff.WriteDouble (vec[i].receiverY);
+          buff.WriteDouble (vec[i].averageAttenuation);
+        }
+      }
+      //==========================================================================================
+      remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
       std::vector<SignalMapItem> _vec;
       uint16_t itemCount = 0;
       if (remainBytes > 2)
@@ -2066,6 +2123,12 @@ rxPacket:
     m_currentSlot = Simulator::Now ().GetNanoSeconds () / (SLOT_LENGTH * 1000);
     return m_currentSlot;
   }
+  void MacLow::SetPosition (double x, double y)
+  {
+    //std::cout<<" set position: "<<" x: "<< x<< " y: "<< y << std::endl;
+    m_positionY = y;
+    m_positionX = x;
+  }
 
   void MacLow::SetAngle (double angle)
   {
@@ -2078,11 +2141,13 @@ rxPacket:
     double preSum=0;
     for (uint32_t i = 0; i < directions.selfSector; ++ i)
     {
+      //std::cout<<" ratio["<<i<<"]: "<< directions.ratio[i] <<" self: "<< directions.selfSector << std::endl;
       preSum += directions.ratio[i];
     }
     if ( preSum != 0)
     {
       begin = (uint32_t) (preSum * FRAME_LENGTH + 1);
+      //std::cout<<" begin: "<<begin <<" presum: "<< preSum<< std::endl;
     }
     else 
     {
@@ -2124,33 +2189,55 @@ rxPacket:
     return abs (priority);
   }
 
+  bool MacLow::IsSelfMaximum (std::vector<uint16_t> conflictSet)
+  {
+    int64_t selfPriority = CalculatePriority (m_self.GetNodeId ());
+    int64_t maxPriority = selfPriority;
+    for (std::vector<uint16_t>::iterator it = conflictSet.begin (); it != conflictSet.end (); ++ it)
+    {
+      NodeStatus status = Simulator::GetNodeStatus (*it);
+      uint16_t relativeSlot = m_currentSlot % FRAME_LENGTH;
+      if ( relativeSlot >= status.begin && relativeSlot <= status.end )
+      {
+        if ( *it == m_self.GetNodeId ())
+          continue;
+        int64_t temp = CalculatePriority (*it);
+        if ( temp > maxPriority)
+          maxPriority = temp;
+      }
+    }
+    if (maxPriority == selfPriority)
+      return true;
+    else
+      return false;
+  }
+
   void MacLow::CalculateSchedule ()
   {
+    NodeStatus status;
+    status.nodeId = m_self.GetNodeId ();
+    status.begin = m_begin;
+    status.end = m_end;
+    status.angle = m_angle;
+    status.x = m_positionX;
+    status.y = m_positionY;
+    Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
     //DATA CHANNEL 1
     if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
     {
       std::vector<uint16_t> oneHop;
-      std::set<uint16_t> unitedExclusionRegion;
-      m_signalMap.GetOneHopNeighbors (LINK_SELECTION_THRESHOLD, oneHop);
-      for (std::vector<uint16_t>::iterator it = oneHop.begin (); it != oneHop.end (); ++ it)
+      std::vector<uint16_t> unitedExclusionRegion;
+
+      MacLow::CollectConflictingNodes (unitedExclusionRegion);
+      bool selfMax = false;
+      NodeStatus status = Simulator::GetNodeStatus (m_self.GetNodeId ());
+      uint16_t relativeSlot = m_currentSlot % FRAME_LENGTH;
+      if ( relativeSlot >= status.begin && relativeSlot <= status.end )
       {
-        SignalMap signalMap = GetSignalMapLocalCopy (*it); 
-        if (signalMap.GetSize () > 0)
-        {
-          double exclusionRegion = m_signalMap.GetLinkExclusionRegionValue (*it, m_self.GetNodeId ()); 
-          signalMap.GetNodesInExclusionRegion (*it, exclusionRegion, unitedExclusionRegion);
-          unitedExclusionRegion.insert (m_self.GetNodeId ());
-        }
+        selfMax = IsSelfMaximum (unitedExclusionRegion);
       }
-      /*
-      std::cout<<" unitedExclusionRegion.size : "<< unitedExclusionRegion.size () << std::endl;
-      for (std::set<uint16_t>::iterator it = unitedExclusionRegion.begin (); it != unitedExclusionRegion.end (); ++ it)
-      {
-        std::cout<<" "<<*it;
-      }
-      std::cout<<endl;
-      */
-      SendDataPacket ();
+      if ( selfMax == true)
+        SendDataPacket ();
 
     }
     else
@@ -2206,5 +2293,38 @@ rxPacket:
     }
     SignalMap s;
     return s;
+  }
+
+  void MacLow::CollectConflictingNodes (std::vector<uint16_t> &vec)
+  {
+    std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (m_self.GetNodeId ());
+    std::vector<uint16_t> receivers;
+    for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
+    {
+      double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
+      if ( rxPower >= LINK_SELECTION_THRESHOLD)
+      {
+        receivers.push_back (it->from); // since its deterministic channel, we can do this
+      }  
+    }
+    // neighbors of recievers should be considered. not neighbors of the sender
+    for (std::vector<uint16_t>::iterator it = receivers.begin (); it != receivers.end (); ++ it)
+    {
+      std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (*it);
+      for (std::vector<SignalMapItem>::iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
+      {
+        if ( _it->from == m_self.GetNodeId () )
+          continue;
+        bool conflicting = false;
+        conflicting = Simulator::CheckIfTwoNodesConflict (m_self.GetNodeId (), _it->from);
+        if ( conflicting == true)
+          vec.push_back (_it->from);
+        // bi-directional exclusion region
+        conflicting = Simulator::CheckIfTwoNodesConflict (_it->from, m_self.GetNodeId ());
+        if ( conflicting == true)
+          vec.push_back (_it->from);
+      }
+    }
+
   }
 } // namespace ns3

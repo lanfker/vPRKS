@@ -13,6 +13,9 @@ namespace ns3{
     double ratio[4];
     uint32_t selfSector;
   }DirectionDistribution;
+
+#ifndef SIGNAL_MAP_ITEM
+#define SIGNAL_MAP_ITEM
   typedef struct SignalMapItem
   {
     uint16_t from; // from is the neighbor.
@@ -24,6 +27,7 @@ namespace ns3{
     uint16_t end; // record active slot fro 'from'
     double exclusionRegion;// dBm
   }SignalMapItem;
+#endif 
   class SignalMap: public Object
   {
     public:
@@ -49,6 +53,7 @@ namespace ns3{
       // additively add neighbors to the set @vec since we are using STL set
       void GetNodesInExclusionRegion (uint16_t to, double exclusionRegion, std::set<uint16_t> &vec);
       void GetOneHopNeighbors (double thresholdDbm, std::vector<uint16_t> &vec);
+      std::vector<SignalMapItem> GetSignalMap ();
     private:
       std::vector<SignalMapItem> m_signalMap;
 

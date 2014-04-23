@@ -1,6 +1,7 @@
 #include "matrix.h"
 #include "ns3/log.h"
 #include <iostream>
+#include <cmath>
 
 NS_LOG_COMPONENT_DEFINE ("Matrix");
 
@@ -94,6 +95,11 @@ namespace ns3
     return true;
   }
 
+  double Matrix::GetValue (uint32_t i, uint32_t j)
+  {
+    return _matrix[i][j];
+  }
+
   bool Matrix::Inverse (Matrix &inverseMatrix)
   {
     //this->ShowMatrix ();
@@ -106,8 +112,26 @@ namespace ns3
     expandMatrix.CalculateExpandMatrix ();
 
     GetInverseMatrix (expandMatrix, inverseMatrix);
-    return true;
+    bool nanInfCheck = inverseMatrix.CheckNanAndInf ();
+    return !nanInfCheck;
+    //return true;
 
+  }
+
+  bool Matrix::CheckNanAndInf ()
+  {
+    int i,j;
+    for ( i = 0; i < GetM (); ++ i)
+    {
+      for (j = 0; j < GetN (); ++ j)
+      {
+        double value;
+        GetValue (i,j,value);
+        if (isnan (value) == true || isinf (value) == true)
+          return true;
+      }
+    }
+    return false;
   }
 
   bool Matrix::AdjustMatrix ()

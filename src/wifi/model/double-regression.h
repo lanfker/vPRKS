@@ -21,7 +21,9 @@ namespace ns3{
       DoubleRegression ();
       ~DoubleRegression ();
       void Initialize (Observation obs, Matrix &phi, Matrix &pathLoss);
-      void GetCoefficientBeta (Matrix &betaMatrix, Matrix &phi, Matrix &pathLoss);
+      void Initialize (std::vector<ObservationItem> vec, Matrix &phi, Matrix &pathLoss);
+      bool GetCoefficientBeta (Matrix &betaMatrix, Matrix &phi, Matrix &pathLoss);
+      double AttenuationEstimation (double senderX, double senderY, double receiverX, double receiverY, Observation obs);
     private:
   };
 }

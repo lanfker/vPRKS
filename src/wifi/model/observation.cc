@@ -1,6 +1,8 @@
 #include "observation.h"
 #include "ns3/log.h"
 #include <iostream>
+#include "matrix.h"
+#include <set>
 
 NS_LOG_COMPONENT_DEFINE ("Observation");
 
@@ -26,6 +28,8 @@ namespace ns3
   }
   void Observation::AppendObservation (uint16_t sender, uint16_t receiver, ObservationItem obs)
   {
+    obs.sender = sender;
+    obs.receiver = receiver;
     for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
         ++ it)
     {
@@ -55,13 +59,19 @@ namespace ns3
         min = it->observations.size ();
       }
     }
-    
+
     return min;
   }
 
-  uint32_t Observation::FindLinkCount ()
+  std::set<uint16_t> Observation::FetchSenders ()
   {
-    return m_observations.size ();
+    std::set<uint16_t> senders;
+    for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
+        ++ it)
+    {
+      senders.insert (it->sender);
+    }
+    return senders;
   }
 
   void Observation::PrintObservations ()
@@ -77,6 +87,39 @@ namespace ns3
           sub_it->receiverY <<") avg_atten: "<<sub_it->averageAttenuation <<" timestamp: "<< sub_it->timeStamp << std::endl;
       }
     }
+  }
+
+  std::vector<ObservationItem> Observation::FetchLinkObservationByReceiver (uint16_t receiver)
+  {
+    std::vector<ObservationItem> vec;
+    for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
+        ++ it)
+    {
+      if ( it->receiver == receiver)
+      {
+        if ( it->observations.size () > 0)
+        {
+          vec.push_back (it->observations[0]);
+        }
+      }
+    }
+    return vec;
+  }
+  std::vector<ObservationItem> Observation::FetchLinkObservationBySender (uint16_t sender)
+  {
+    std::vector<ObservationItem> vec;
+    for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
+        ++ it)
+    {
+      if ( it->sender == sender)
+      {
+        if ( it->observations.size () > 0)
+        {
+          vec.push_back (it->observations[0]);
+        }
+      }
+    }
+    return vec;
   }
 
   void Observation::RemoveExpireItems (Time duration, uint32_t maxCount)
@@ -111,7 +154,7 @@ namespace ns3
       //std::cout<<"!!!!!!!!!!!!! erase: "<<   *it<< std::endl;
       m_observations.erase (m_observations.begin () + *it);
     }
-  
+
     for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
         ++ it)
     {
@@ -121,4 +164,5 @@ namespace ns3
       }
     }
   }
-}
+
+  }

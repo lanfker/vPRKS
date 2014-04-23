@@ -34,6 +34,7 @@
 
 namespace ns3 {
 
+
 class SimulatorImpl;
 class Scheduler;
 
@@ -55,6 +56,42 @@ class Scheduler;
  * is shown below:
  * \include src/core/examples/sample-simulator.cc
  */
+#ifndef SIGNAL_MAP_ITEM
+#define SIGNAL_MAP_ITEM
+typedef struct SignalMapItem
+{
+  uint16_t from; // from is the neighbor.
+  uint16_t to; // to is m_self
+  double attenuation;
+  Time timeStamp;
+  double angle;
+  uint16_t begin; // record active slot for 'from'
+  uint16_t end; // record active slot fro 'from'
+  double exclusionRegion;// dBm
+}SignalMapItem;
+#endif 
+#ifndef NODE_STATUS
+#define NODE_STATUS
+typedef struct NodeStatus
+{
+  uint16_t nodeId;
+  double x;
+  double y;
+  double angle;
+  uint16_t begin;
+  uint16_t end;
+}NodeStatus;
+#endif
+typedef struct NodeSignalMap
+{
+  uint16_t nodeId;
+  std::vector<SignalMapItem> localSignalMap;
+}NodeSignalMap;
+typedef struct NodeSendingStatus
+{
+  uint16_t nodeId;
+  int64_t sendingSlot;
+}NodeSendingStatus;
 class Simulator 
 {
 public:
@@ -776,6 +813,26 @@ public:
    *          MPI or other distributed simulations
    */
   static uint32_t GetSystemId (void);
+  //=====================================For vPRKS==========================================
+  static std::vector<NodeSignalMap> m_signalMaps;
+  static void UpdateSignalMap (uint16_t nodeId, std::vector<SignalMapItem> localSignalMap);
+  static std::vector<SignalMapItem> GetSignalMap (uint16_t nodeId);
+
+  static std::vector<NodeStatus> m_nodeStatusTable;
+  static void UpdateNodeStatus (uint16_t nodeId, NodeStatus nodeStatus);
+  static NodeStatus GetNodeStatus (uint16_t nodeId);
+  static void PrintSignalMaps (uint16_t nodeId);
+  static void PrintNodeStatus (uint16_t nodeId);
+  static double GetExclusionRegion (uint16_t sender, uint16_t receiver);
+  static void GetSlotsForNode (uint16_t nodeId, uint16_t &begin, uint16_t &end);
+
+  static std::vector<NodeSendingStatus> m_sendingNodes;
+  static void RemoveSendingNode (NodeSendingStatus nodeSendingStatus);
+  static void AddSendingNode (NodeSendingStatus nodeSendingStatus);
+
+  static bool IsReceiverInCurrentSlot (uint16_t nodeId, int16_t slot);
+  static bool CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor);
+  static void GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, std::vector<uint16_t> &vec);
 private:
   Simulator ();
   ~Simulator ();

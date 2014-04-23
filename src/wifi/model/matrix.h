@@ -22,6 +22,7 @@ namespace ns3{
       uint32_t GetN ();
       bool SetValue (uint32_t i, uint32_t j, double value);
       bool GetValue (uint32_t i, uint32_t j, double &value);
+      double GetValue (uint32_t i, uint32_t j);
       bool Inverse (Matrix &inverseMatrix);
       void InitiateExpandMatrix (Matrix &sourceMatrix, Matrix &expandMatrix);
       bool AdjustMatrix ();
@@ -31,6 +32,7 @@ namespace ns3{
       void Product (Matrix &inverseMatrix, Matrix &resultMatrix);
       bool Transpose (Matrix &transposeMatrix);
       void ShowShape ();
+      bool CheckNanAndInf ();
     private:
       // In our case, _m and _n should be equal
       uint32_t _m;

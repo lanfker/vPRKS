@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include "signal-map.h"
+#include "ns3/settings.h"
 
 NS_LOG_COMPONENT_DEFINE ("ExclusionRegionHelper");
 
@@ -35,6 +36,7 @@ namespace ns3
       uint16_t sender, uint16_t receiver, double txPower)
   {
 
+    txPower = txPower + TX_GAIN;
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)
     {

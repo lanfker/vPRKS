@@ -193,5 +193,9 @@ void AdhocWifiMac::SetAngle (double angle)
 {
   m_low->SetAngle (angle);
 }
+void AdhocWifiMac::SetPosition (double x, double y)
+{
+  m_low -> SetPosition (x, y);
+}
 
 } // namespace ns3

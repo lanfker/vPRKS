@@ -136,28 +136,32 @@ namespace ns3
         directionDistribution.ratio[0] += 1;
       }
     }
-    double signalMapSize = GetSize ();
+    if ( angle >= 0 && angle <= 90)
+    {
+      directionDistribution.selfSector = 0;
+      directionDistribution.ratio[0] += 1;
+    }
+    else if ( angle > 90 && angle <= 180)
+    {
+      directionDistribution.selfSector = 1;
+      directionDistribution.ratio[1] += 1;
+    }
+    else if ( angle >= -90 && angle < 0)
+    {
+      directionDistribution.selfSector = 3;   
+      directionDistribution.ratio[3] += 1;
+    }
+    else if (angle < -90 && angle >= -180)
+    {
+      directionDistribution.selfSector = 2;
+      directionDistribution.ratio[2] += 1;
+    }
+    double signalMapSize = GetSize () + 1; // considering the node itself, so add one.
 
     directionDistribution.ratio[0] /= signalMapSize;
     directionDistribution.ratio[1] /= signalMapSize;
     directionDistribution.ratio[2] /= signalMapSize;
     directionDistribution.ratio[3] /= signalMapSize;
-    if ( angle >= 0 && angle <= 90)
-    {
-      directionDistribution.selfSector = 0;
-    }
-    else if ( angle > 90 && angle <= 180)
-    {
-      directionDistribution.selfSector = 1;
-    }
-    else if ( angle >= -90 && angle < 0)
-    {
-      directionDistribution.selfSector = 3;   
-    }
-    else if (angle < -90 && angle >= -180)
-    {
-      directionDistribution.selfSector = 2;
-    }
     //std::cout<<" angle: "<< angle <<" sector: "<< directionDistribution.selfSector << std::endl;
     return directionDistribution;
   }
@@ -249,6 +253,10 @@ namespace ns3
         break;
       }
     }
+  }
+  std::vector<SignalMapItem> SignalMap::GetSignalMap ()
+  {
+    return m_signalMap;
   }
 
 }

@@ -132,6 +132,7 @@ namespace ns3
     traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, m_position);
     traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, m_name, m_angle);
     mac->SetAngle (m_angle );
+    mac->SetPosition (m_position.x, m_position.y);
 
 
     uint8_t * payload = new uint8_t[DEFAULT_PACKET_LENGTH];

@@ -415,6 +415,9 @@ switchChannel:
       WifiMacTrailer _fcs;
       packet->RemoveHeader (_hdr);
       packet->RemoveTrailer (_fcs);
+      uint32_t sequenceNumber = _hdr.GetSequenceNumber ();
+      //std::cout<<"sequence number: "<< sequenceNumber << std::endl;
+      //rxPowerDbm = -98 + (sequenceNumber - 30 )* 0.01;
 
       uint8_t payload[DEFAULT_PACKET_LENGTH];
       packet->CopyData (payload, DEFAULT_PACKET_LENGTH);
@@ -819,6 +822,7 @@ maybeCcaBusy:
 
       NS_LOG_DEBUG ("mode=" << (event->GetPayloadMode ().GetDataRate ()) <<
           ", snr=" << snrPer.snr << ", per=" << snrPer.per << ", size=" << packet->GetSize ());
+      //std::cout<<"SNR: "<< 10*log10 (snrPer.snr) <<" PDR: "<< 1 - snrPer.per << std::endl;
       if (m_random.GetValue () > snrPer.per)
       {
         NotifyRxEnd (packet);
