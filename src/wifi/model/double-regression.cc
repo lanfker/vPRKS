@@ -37,8 +37,10 @@ namespace ns3
       phi.SetValue (i,0, 1);
       phi.SetValue (i,1, vec[i].senderX);
       phi.SetValue (i,2, vec[i].senderY);
+      /*
       phi.SetValue (i,3, vec[i].receiverX);
       phi.SetValue (i,4, vec[i].receiverY);
+      */
       pathLoss.SetValue (i, 0, vec[i].averageAttenuation);
     }
   }
@@ -52,10 +54,14 @@ namespace ns3
     {
       //std::cout<<" m_phi.GetM () "<<phi.GetM () << " m_phi.GetN ()" <<phi.GetN () << std::endl;
       phi.SetValue (i,0, 1);
+      phi.SetValue (i,1, obsVector[i].observations[0].receiverX);
+      phi.SetValue (i,2, obsVector[i].observations[0].receiverY);
+      /*
       phi.SetValue (i,1, obsVector[i].observations[0].senderX);
       phi.SetValue (i,2, obsVector[i].observations[0].senderY);
       phi.SetValue (i,3, obsVector[i].observations[0].receiverX);
       phi.SetValue (i,4, obsVector[i].observations[0].receiverY);
+      */
       pathLoss.SetValue (i, 0, obsVector[i].observations[0].averageAttenuation);
     }
   }
@@ -107,22 +113,24 @@ namespace ns3
       uint32_t obsCount = vec.size ();
       if ( obsCount > 1)
       {
-        Matrix phi = Matrix(obsCount, 5);
+        Matrix phi = Matrix(obsCount, 3);
         Matrix pathLoss = Matrix (obsCount, 1);
+
         Initialize (obs, phi, pathLoss);
-        Matrix  betaMatrix = Matrix (5,1);
+        Matrix  betaMatrix = Matrix (3,1);
         bool betaExist = false; 
         betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss);
+        std::cout<<" beta exist: "<< betaExist << std::endl;
+        phi.ShowMatrix ();
         if ( betaExist ==  true)
         {
           NodeStatus status = Simulator::GetNodeStatus (*it);
           //std::cout<<" coefficients are: "<< std::endl;
           //betaMatrix.ShowMatrix ();
-          double atten = betaMatrix.GetValue (0,0) + status.x * betaMatrix.GetValue (1,0) + status.y * betaMatrix.GetValue (2,0)
-            + receiverX * betaMatrix.GetValue (3,0) + receiverY * betaMatrix.GetValue (4,0);
-          if ( atten >= 0)
-            continue;
-          std::cout<<" for sender: "<< *it <<" (" << status.x <<", "<< status.y <<") receiver: "<< receiver <<" (" << receiverX <<", "<<receiverY<<") atten: "<< atten << std::endl;
+          //double atten = betaMatrix.GetValue (0,0) + status.x * betaMatrix.GetValue (1,0) + status.y * betaMatrix.GetValue (2,0)
+            //+ receiverX * betaMatrix.GetValue (3,0) + receiverY * betaMatrix.GetValue (4,0);
+          double atten = betaMatrix.GetValue (0,0) + receiverX * betaMatrix.GetValue (1,0) + receiverY * betaMatrix.GetValue (2,0);
+          //std::cout<<" for sender: "<< *it <<" (" << status.x <<", "<< status.y <<") receiver: "<< receiver <<" (" << receiverX <<", "<<receiverY<<") atten: "<< atten << std::endl;
           ObservationItem item;
           item.senderX = status.x;
           item.senderY = status.y;
@@ -139,17 +147,18 @@ namespace ns3
     std::cout<<" obsCount: "<< _vec.size () << std::endl;
     if ( obsCount > 1)
     {
-        Matrix phi = Matrix(obsCount, 5);
+        Matrix phi = Matrix(obsCount, 3);
         Matrix pathLoss = Matrix (obsCount, 1);
         Initialize (_vec, phi, pathLoss);
         phi.ShowMatrix ();
-        Matrix  betaMatrix = Matrix (5,1);
+        Matrix  betaMatrix = Matrix (3,1);
         bool betaExist = false; 
         betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss); std::cout<<" final result exits: "<< betaExist << std::endl;
         if (betaExist == true)
         {
-          double atten = betaMatrix.GetValue (0,0) + senderX * betaMatrix.GetValue (1,0) + senderY * betaMatrix.GetValue (2,0)
-            + receiverX * betaMatrix.GetValue (3,0) + receiverY * betaMatrix.GetValue (4,0);
+          //double atten = betaMatrix.GetValue (0,0) + senderX * betaMatrix.GetValue (1,0) + senderY * betaMatrix.GetValue (2,0)
+            //+ receiverX * betaMatrix.GetValue (3,0) + receiverY * betaMatrix.GetValue (4,0);
+          double atten = betaMatrix.GetValue (0,0) + senderX * betaMatrix.GetValue (1,0) + senderY * betaMatrix.GetValue (2,0);
           return atten;
         }
         else

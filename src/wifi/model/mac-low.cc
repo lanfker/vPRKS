@@ -986,9 +986,11 @@ namespace ns3 {
           temp.receiverY = buff.ReadDouble ();
           temp.averageAttenuation = buff.ReadDouble ();
           temp.timeStamp = Simulator::Now ();
-          //std::cout<<"sender: "<<temp.sender <<" receiver: "<< temp.receiver <<" senderX: "<< temp.senderX <<
-            //" senderY: "<< temp.senderY <<" receiverX: "<< temp.receiverX <<" receiverY: "<< temp.receiverY<<
-            //" averageAtten: "<< temp.averageAttenuation << std::endl;
+          /*
+          std::cout<<"sender: "<<temp.sender <<" receiver: "<< temp.receiver <<" senderX: "<< temp.senderX <<
+            " senderY: "<< temp.senderY <<" receiverX: "<< temp.receiverX <<" receiverY: "<< temp.receiverY<<
+            " averageAtten: "<< temp.averageAttenuation << std::endl;
+            */
           m_observation.AppendObservation (temp.sender, temp.receiver, temp);
         }
         //std::cout<<"AT vehicle: "<<m_self.GetNodeId ()<< std::endl;
@@ -1055,7 +1057,8 @@ namespace ns3 {
           NodeStatus receiverStatus = Simulator::GetNodeStatus (2);
 
           double at = doubleRegresion.AttenuationEstimation (1, 2, senderStatus.x, senderStatus.y, receiverStatus.x, receiverStatus.y, m_observation);
-          std::cout<<"atten: "<< at <<" tx_x: "<< senderStatus.x<<" tx_y: "<< senderStatus.y<<" rx_x: "<< receiverStatus.x<<" rx_y: "<< receiverStatus.y<< std::endl;
+          if ( at != 0)
+            std::cout<<"atten: "<< at <<" tx_x: "<< senderStatus.x<<" tx_y: "<< senderStatus.y<<" rx_x: "<< receiverStatus.x<<" rx_y: "<< receiverStatus.y<< std::endl;
         }
 
 
@@ -1373,6 +1376,7 @@ rxPacket:
           txPower = (uint32_t)attenuation + DELIVERY_100_SNR;
           txPower = txPower - DEFAULT_POWER;
           //std::cout<<" txPowerLevel: "<< txPower << std::endl;
+          txPower = 0; // to test double regression
           m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, (uint8_t) txPower);
           //======================== POWER control for control signal =================
         }
