@@ -3,6 +3,7 @@
 #include <iostream>
 #include "matrix.h"
 #include <set>
+#include <cmath>
 
 NS_LOG_COMPONENT_DEFINE ("Observation");
 
@@ -105,7 +106,9 @@ namespace ns3
     }
     return vec;
   }
-  std::vector<ObservationItem> Observation::FetchLinkObservationBySender (uint16_t sender)
+  /* Choose closeby links' observations 
+   */
+  std::vector<ObservationItem> Observation::FetchLinkObservationBySender (uint16_t sender, double senderX, double senderY, double receiverX, double receiverY)
   {
     std::vector<ObservationItem> vec;
     for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
@@ -115,7 +118,15 @@ namespace ns3
       {
         if ( it->observations.size () > 0)
         {
-          vec.push_back (it->observations[0]);
+          ObservationItem item = it->observations[0];
+          double dt = sqrt ( pow (senderX - item.senderX, 2) + pow (senderY - item.senderY, 2));
+          double dr = sqrt ( pow (receiverX - item.receiverX, 2) + pow (receiverY - item.receiverY, 2));
+          double dist = sqrt (dt*dt + dr*dr);
+          if ( dist <= LINK_DISTANCE_THRESHOLD)
+          {
+            //std::cout<<" dist: "<< dist << std::endl;
+            vec.push_back (it->observations[0]);
+          }
         }
       }
     }

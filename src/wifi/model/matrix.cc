@@ -113,6 +113,7 @@ namespace ns3
 
     GetInverseMatrix (expandMatrix, inverseMatrix);
     bool nanInfCheck = inverseMatrix.CheckNanAndInf ();
+    //inverseMatrix.ShowMatrix ();
     return !nanInfCheck;
     //return true;
 

@@ -44,7 +44,7 @@ namespace ns3{
       // The should at most maxCount items stored for each link
       void RemoveExpireItems (Time duration, uint32_t maxCount);
       std::vector<ObservationItem> FetchLinkObservationByReceiver (uint16_t receiver);
-      std::vector<ObservationItem> FetchLinkObservationBySender (uint16_t sender);
+      std::vector<ObservationItem> FetchLinkObservationBySender (uint16_t sender, double senderX, double senderY, double receiverX, double receiverY);
       std::vector <LinkObservations> m_observations; // a vector of vectors
     private:
   };

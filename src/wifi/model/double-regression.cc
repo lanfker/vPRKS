@@ -95,13 +95,15 @@ namespace ns3
     inverseDotTranspose.Product (pathLoss, betaMatrix); // (\Phi^T \Phi)^{-1} * \Phi^T * L
     return betaExist;
   }
-  double DoubleRegression::AttenuationEstimation (double senderX, double senderY, double receiverX, double receiverY, Observation obs)
+  double DoubleRegression::AttenuationEstimation (uint16_t sender, uint16_t receiver, double senderX, double senderY, double receiverX, double receiverY, Observation obs)
   {
     std::vector<ObservationItem> _vec;
     std::set<uint16_t> senders = obs.FetchSenders ();
     for (std::set<uint16_t>::iterator it = senders.begin (); it != senders.end (); ++ it)
     {
-      std::vector<ObservationItem> vec = obs.FetchLinkObservationBySender (*it);
+      if ( sender == *it || receiver == *it)
+        continue;
+      std::vector<ObservationItem> vec = obs.FetchLinkObservationBySender (*it, senderX, senderY, receiverX, receiverY);
       uint32_t obsCount = vec.size ();
       if ( obsCount > 1)
       {
@@ -118,7 +120,9 @@ namespace ns3
           //betaMatrix.ShowMatrix ();
           double atten = betaMatrix.GetValue (0,0) + status.x * betaMatrix.GetValue (1,0) + status.y * betaMatrix.GetValue (2,0)
             + receiverX * betaMatrix.GetValue (3,0) + receiverY * betaMatrix.GetValue (4,0);
-          std::cout<<" for sender: "<< *it <<" atten: "<< atten << std::endl;
+          if ( atten >= 0)
+            continue;
+          std::cout<<" for sender: "<< *it <<" (" << status.x <<", "<< status.y <<") receiver: "<< receiver <<" (" << receiverX <<", "<<receiverY<<") atten: "<< atten << std::endl;
           ObservationItem item;
           item.senderX = status.x;
           item.senderY = status.y;
@@ -126,6 +130,7 @@ namespace ns3
           item.receiverY = receiverY;
           item.averageAttenuation = atten;
           _vec.push_back (item);
+          //_vec.push_back (item);
         }
       }
     }
@@ -137,10 +142,10 @@ namespace ns3
         Matrix phi = Matrix(obsCount, 5);
         Matrix pathLoss = Matrix (obsCount, 1);
         Initialize (_vec, phi, pathLoss);
+        phi.ShowMatrix ();
         Matrix  betaMatrix = Matrix (5,1);
         bool betaExist = false; 
-        betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss);
-        std::cout<<" final result exits: "<< betaExist << std::endl;
+        betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss); std::cout<<" final result exits: "<< betaExist << std::endl;
         if (betaExist == true)
         {
           double atten = betaMatrix.GetValue (0,0) + senderX * betaMatrix.GetValue (1,0) + senderY * betaMatrix.GetValue (2,0)

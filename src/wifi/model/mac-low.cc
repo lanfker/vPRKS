@@ -384,6 +384,29 @@ namespace ns3 {
     m_currentSlot = 0;
     m_angle = 0;
     // Update slot number when it should be incremented
+    /*
+    Matrix test = Matrix (3,3);
+    test.SetValue (0, 0, 5);
+    test.SetValue (0, 1, 2);
+    test.SetValue (0, 2, 3);
+    test.SetValue (1, 0, 4);
+    test.SetValue (1, 1, 5);
+    test.SetValue (1, 2, 6);
+    test.SetValue (2, 0, 7);
+    test.SetValue (2, 1, 8);
+    test.SetValue (2, 2, 4);
+
+    Matrix times = Matrix (3, 2);
+    times.SetValue (0,0,2);
+    times.SetValue (0,1,1);
+    times.SetValue (1,0,4);
+    times.SetValue (1,1,7);
+    times.SetValue (2,0,9);
+    times.SetValue (2,1,2);
+    Matrix result = Matrix(3,2);
+    test.Product (times, result);
+    result.ShowMatrix ();
+    */
     Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::GetCurrentSlot, this);
 
   }
@@ -1031,9 +1054,8 @@ namespace ns3 {
           NodeStatus senderStatus = Simulator::GetNodeStatus (1);
           NodeStatus receiverStatus = Simulator::GetNodeStatus (2);
 
-          double at = doubleRegresion.AttenuationEstimation (senderStatus.x, senderStatus.y, receiverStatus.x, receiverStatus.y, m_observation);
-          std::cout<<"atten: "<< at <<" tx_x: "<< senderStatus.x<<" tx_y: "<< senderStatus.y<<
-            " rx_x: "<< receiverStatus.x<<" rx_y: "<< receiverStatus.y<< std::endl;
+          double at = doubleRegresion.AttenuationEstimation (1, 2, senderStatus.x, senderStatus.y, receiverStatus.x, receiverStatus.y, m_observation);
+          std::cout<<"atten: "<< at <<" tx_x: "<< senderStatus.x<<" tx_y: "<< senderStatus.y<<" rx_x: "<< receiverStatus.x<<" rx_y: "<< receiverStatus.y<< std::endl;
         }
 
 
@@ -1539,6 +1561,7 @@ rxPacket:
   void
     MacLow::SendDataPacket (void)
     {
+      //std::cout<<m_self.GetNodeId () <<" sending data packet: "<< std::endl;
       NS_LOG_FUNCTION (this);
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
