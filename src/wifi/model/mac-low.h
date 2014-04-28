@@ -550,7 +550,7 @@ private:
   VoidCallback m_setListenerCallback;
   SetPacketCallback m_setPacketCallback;
   std::vector<NeighborSignalMap> m_neighborSignalMaps;
-  LinkExclusionRegion m_exclusionRegionHelper;
+  ExclusionRegionHelper m_exclusionRegionHelper;
   MinimumVarianceController m_minimumVarianceController;
 
 

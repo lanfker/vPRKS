@@ -45,6 +45,22 @@ Exclusion region is shared based a each link. A node has to compute the union of
 How to decide if a node should stay in data channel? 1) If another explicitly tells the node to stay in data channel; 2) The node with the maximum priority within its union ER is a one-hop neighbor.
 
 
+\subsection{Road Level Allocation}
+To begin with, each vehicle share its travel direction and its current location with its neighbors using both data packet and control packet. Nearby vehilces can use the location information to determine which road the vehicle is on. (If we do road segment based density estimation, we need location information; if we do purely direction based density estimation, we do not need location information for vehicle density estimation)
+Similarly, each vehicle stores the received direction and location information within its local signal map.
+After a vehicle has information about its neighbors' travel directions and locations, it estimates road density based on vehicle's travel direction and location. Then, it shares its estimation with its neighbors. When a vehicle has estimations of all its neighbors, it filters out some of the outliers, i.e., maximum values and minimum values or a certain percentile rank range, and then calculates the mean density. In order to make our road level allocation less sensitive to small changes of road density, it is better to discretize road density into ranges.
+As long as a mean road density value falls into the same density range, a vehicle keeps using its current road level allocation result.
+For the question of how to make our density range reasonable, the best choice is that we find a report from existing work.
+As an alternative, lets assume the length of each vehicle is 3 meters.
+For a single lane, we can consider the following four scenarios: 
+  1) For the traffic jam scenario, the bumper to bumper distance is roughly 4 meters, i.e., the space between two vehicles is only one meters long. In this case, we have 25 vehicles for each 100 meters. 
+  2) For the slow traffic scenario where vehicles move very slow. We can assume the space between two vehicles is 2 meters. Although this distance is small, drivers can response to sudden deacceleration due to slow moving speed. In this case, we have 20 vehicles for each 100 meters.   3) For free traffic where vehile density is high. We can assume the space between two vehilces is two times of the vehicle length. In this case, drivers need to be very careful when changing lanes. Nevertheless, if no accidents happen, vehicles can travel freely. As a result, we have 100/9 vehicles for each 100 meters.
+  4) For free traffic where vehicle density is not so high. We can assume the space between two vehicles is five times of the vehilce length. The number five is picked such that even a vehicle changes lane, there will be still two times of the vehicle length of free space between two vehicles. Thus, changing lanes causes no trouble. For this case, we have 100/18 vehilces for each 100 meters.
+  Of course, we can extend these values to the case where the unit length is one kilometer or one mile. 
+
+  We can decide which road a target vehilce is on using the following method: Since road segment in SUMO are straight segement, which means we can have a linear expression to express the road segment based on the coordinates of two end points. For a specific location, we test if the location is in a specific road segment. If yes, the vehilce is on that road segment.  To do this, the NS-3 program needs to parse the road map specified in SUMO.
+
+
 \section{How to run the protocol}
 First, we need to create signal maps for our scheduling algorithm. When simulation starts, all nodes run CSMA/CA to create signal map for later use for 100 seconds.
 

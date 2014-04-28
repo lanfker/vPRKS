@@ -7,6 +7,7 @@
 #include "math-helper.h"
 namespace ns3
 {
+  const uint32_t ARRAY_LENGTH = 446;
   class Controller : public Object
   {
     public:
@@ -14,7 +15,7 @@ namespace ns3
       Controller ();
       ~Controller ();
 
-      static const double m_pdrToSnr[446][2];
+      static const double m_pdrToSnr[ARRAY_LENGTH][2];
       virtual double ComputeSlope (double currentPdr);
       virtual double GetSnrByPdr (double pdr);
     private:

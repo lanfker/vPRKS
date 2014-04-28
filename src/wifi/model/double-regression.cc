@@ -4,6 +4,7 @@
 #include "matrix.h"
 #include <iostream>
 #include "ns3/simulator.h"
+#include <cmath>
 
 NS_LOG_COMPONENT_DEFINE ("DoubleRegression");
 
@@ -29,19 +30,28 @@ namespace ns3
   }
   /* Here, we assume the length of the \Phi vector is 4.
    */
-  void DoubleRegression::Initialize (std::vector<ObservationItem> vec, Matrix &phi, Matrix &pathLoss)
+  void DoubleRegression::Initialize (std::vector<ObservationItem> vec, Matrix &phi, Matrix &pathLoss, bool senderCoordinates)
   {
     for (uint32_t i = 0; i < phi.GetM (); ++ i)
     {
       //std::cout<<" m_phi.GetM () "<<phi.GetM () << " m_phi.GetN ()" <<phi.GetN () << std::endl;
       phi.SetValue (i,0, 1);
-      phi.SetValue (i,1, vec[i].senderX);
-      phi.SetValue (i,2, vec[i].senderY);
+      if ( senderCoordinates ==  true)
+      {
+        phi.SetValue (i,1, vec[i].senderX);
+        phi.SetValue (i,2, vec[i].senderY);
+      }
+      else
+      {
+        phi.SetValue (i,1, vec[i].receiverX);
+        phi.SetValue (i,2, vec[i].receiverY);
+      }
       /*
       phi.SetValue (i,3, vec[i].receiverX);
       phi.SetValue (i,4, vec[i].receiverY);
       */
       pathLoss.SetValue (i, 0, vec[i].averageAttenuation);
+      //std::cout<< " s_x: "<< vec[i].senderX <<" s_y: "<< vec[i].senderY<< " r_x: "<< vec[i].receiverX <<" r_y: "<< vec[i].receiverY <<" average atten: " << vec[i].averageAttenuation << std::endl;
     }
   }
 
@@ -63,6 +73,7 @@ namespace ns3
       phi.SetValue (i,4, obsVector[i].observations[0].receiverY);
       */
       pathLoss.SetValue (i, 0, obsVector[i].observations[0].averageAttenuation);
+      //std::cout<< " x: "<< obsVector[i].observations[0].senderX<<" y: "<<  obsVector[i].observations[0].senderY<<" average atten: " << obsVector[i].observations[0].averageAttenuation << std::endl;
     }
   }
 
@@ -103,6 +114,7 @@ namespace ns3
   }
   double DoubleRegression::AttenuationEstimation (uint16_t sender, uint16_t receiver, double senderX, double senderY, double receiverX, double receiverY, Observation obs)
   {
+    //std::cout<<" senderx: "<< senderX <<" sendery: "<< senderY <<" recieverx: "<< receiverX <<" receivery: "<< receiverY << std::endl;
     std::vector<ObservationItem> _vec;
     std::set<uint16_t> senders = obs.FetchSenders ();
     for (std::set<uint16_t>::iterator it = senders.begin (); it != senders.end (); ++ it)
@@ -111,25 +123,33 @@ namespace ns3
         continue;
       std::vector<ObservationItem> vec = obs.FetchLinkObservationBySender (*it, senderX, senderY, receiverX, receiverY);
       uint32_t obsCount = vec.size ();
-      if ( obsCount > 1)
+      if ( obsCount > 5)
       {
         Matrix phi = Matrix(obsCount, 3);
         Matrix pathLoss = Matrix (obsCount, 1);
 
-        Initialize (obs, phi, pathLoss);
+        //std::cout<<" for sender: " << *it << " obsCount: "<< obsCount << std::endl;
+        Initialize (vec, phi, pathLoss, false);
+        //phi.ShowMatrix ();
+        //pathLoss.ShowMatrix ();
+        //phi.ShowMatrix ();
         Matrix  betaMatrix = Matrix (3,1);
         bool betaExist = false; 
         betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss);
-        std::cout<<" beta exist: "<< betaExist << std::endl;
-        phi.ShowMatrix ();
+        //betaMatrix.ShowMatrix ();
+        //std::cout<<" beta exist: "<< betaExist << std::endl;
+        //phi.ShowMatrix ();
         if ( betaExist ==  true)
         {
           NodeStatus status = Simulator::GetNodeStatus (*it);
           //std::cout<<" coefficients are: "<< std::endl;
           //betaMatrix.ShowMatrix ();
-          //double atten = betaMatrix.GetValue (0,0) + status.x * betaMatrix.GetValue (1,0) + status.y * betaMatrix.GetValue (2,0)
-            //+ receiverX * betaMatrix.GetValue (3,0) + receiverY * betaMatrix.GetValue (4,0);
           double atten = betaMatrix.GetValue (0,0) + receiverX * betaMatrix.GetValue (1,0) + receiverY * betaMatrix.GetValue (2,0);
+          double dist = sqrt ( pow(status.x - receiverX, 2) + pow ( status.y - receiverY, 2 ));
+          if ( dist == 0)// || dist > LINK_DISTANCE_THRESHOLD)
+            continue;
+          std::cout<<" for sender: "<< *it <<" dist: "<< dist << std::endl;
+
           //std::cout<<" for sender: "<< *it <<" (" << status.x <<", "<< status.y <<") receiver: "<< receiver <<" (" << receiverX <<", "<<receiverY<<") atten: "<< atten << std::endl;
           ObservationItem item;
           item.senderX = status.x;
@@ -138,22 +158,23 @@ namespace ns3
           item.receiverY = receiverY;
           item.averageAttenuation = atten;
           _vec.push_back (item);
-          //_vec.push_back (item);
         }
       }
     }
 
     uint32_t obsCount = _vec.size ();
     std::cout<<" obsCount: "<< _vec.size () << std::endl;
-    if ( obsCount > 1)
+    if ( obsCount > 5)
     {
         Matrix phi = Matrix(obsCount, 3);
         Matrix pathLoss = Matrix (obsCount, 1);
-        Initialize (_vec, phi, pathLoss);
-        phi.ShowMatrix ();
+        Initialize (_vec, phi, pathLoss, true);
+        //phi.ShowMatrix ();
+        //pathLoss.ShowMatrix ();
         Matrix  betaMatrix = Matrix (3,1);
         bool betaExist = false; 
-        betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss); std::cout<<" final result exits: "<< betaExist << std::endl;
+        betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss); 
+        //std::cout<<" final result exits: "<< betaExist << std::endl;
         if (betaExist == true)
         {
           //double atten = betaMatrix.GetValue (0,0) + senderX * betaMatrix.GetValue (1,0) + senderY * betaMatrix.GetValue (2,0)

@@ -44,6 +44,7 @@
 #include <cstdlib>
 #include "exclusion-region-helper.h"
 #include "controller.h"
+#include <cmath>
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -380,7 +381,7 @@ namespace ns3 {
     m_lastNavDuration = Seconds (0);
     m_lastNavStart = Seconds (0);
     m_promisc = false;
-    m_sequenceNumber = 0;
+    m_sequenceNumber = 4090;
     m_currentSlot = 0;
     m_angle = 0;
     // Update slot number when it should be incremented
@@ -723,6 +724,7 @@ namespace ns3 {
       uint16_t receiver = m_self.GetNodeId ();
       Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
       Vector position = selfMobilityModel -> GetPosition ();
+      //std::cout<<" position.x: "<< position.x <<" position.y: "<< position.y<< std::endl;
       //-----------------------------------------------------
       uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
       uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
@@ -737,6 +739,19 @@ namespace ns3 {
       uint16_t begin = buff.ReadU16 ();
       uint16_t end = buff.ReadU16 ();
       m_signalMap.UpdateVehicleStatus (sender, angle, begin, end);
+
+
+      /*
+      ObservationItem obsItem;
+
+      obsItem.senderX = x;
+      obsItem.senderY = y;
+      obsItem.receiverX =  position.x;
+      obsItem.receiverY =  position.y;
+      obsItem.averageAttenuation = txPower - rxPower;
+      obsItem.timeStamp = Simulator::Now ();
+      m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
+      */
 
       SignalMapItem signalMapItem;
       signalMapItem.to = m_self.GetNodeId ();
@@ -1028,13 +1043,18 @@ namespace ns3 {
 
         LinkEstimator linkEstimator;
         m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
-        LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
-        m_linkEstimator.IsPdrUpdated (sender, receiver, 20); // 20 as window size
+        bool pdrUpdated = m_linkEstimator.IsPdrUpdated (sender, receiver, LINKE_ESTIMATOR_WINDOW_SIZE); // 20 as window size
+        if ( pdrUpdated == true)
+        {
+          LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
+          // need dela_interference;
+          bool conditionTwoMeet = false;
+          double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
+          //std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " deltaInterferenceDb: "<< deltaInterferenceDb << std::endl;
+          m_signalMap.PrintSignalMap (m_self.GetNodeId ());
+          //double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (m_signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER);
+        }
 
-        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // need dela_interference;
-        //m_minimumVarianceController.GetDeltaInterference (double desiredPdr, double ewmaCurrentPdr, double estimatedCurrentPdr, bool &conditionTwoMeet)
-        //double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (m_signalMap, deltaInterference, sender, receiver, DEFAULT_POWER);
 
 
         ObservationItem obsItem;
@@ -1050,16 +1070,27 @@ namespace ns3 {
         //<< m_observation.FindMinimumObservationLength () << std::endl;
         m_observation.RemoveExpireItems (Seconds(OBSERVATION_EXPIRATION_TIME), MAX_OBSERVATION_ITEMS_PER_LINK);
 
-        if ( m_self.GetNodeId () == 3)
+        /*
+         * For testing Double regression the method
+        if ( m_self.GetNodeId () == 20)
         {
           DoubleRegression doubleRegresion;
-          NodeStatus senderStatus = Simulator::GetNodeStatus (1);
-          NodeStatus receiverStatus = Simulator::GetNodeStatus (2);
+          NodeStatus senderStatus = Simulator::GetNodeStatus (23);
+          NodeStatus receiverStatus = Simulator::GetNodeStatus (20);
 
-          double at = doubleRegresion.AttenuationEstimation (1, 2, senderStatus.x, senderStatus.y, receiverStatus.x, receiverStatus.y, m_observation);
-          if ( at != 0)
-            std::cout<<"atten: "<< at <<" tx_x: "<< senderStatus.x<<" tx_y: "<< senderStatus.y<<" rx_x: "<< receiverStatus.x<<" rx_y: "<< receiverStatus.y<< std::endl;
+          if ( senderStatus.x != 0 || receiverStatus.x != 0)
+          {
+            double at = doubleRegresion.AttenuationEstimation (1, 2, senderStatus.x, senderStatus.y, receiverStatus.x, receiverStatus.y, m_observation);
+            if ( at != 0)
+            {
+              double dist = sqrt ( pow (senderStatus.x - receiverStatus.x, 2) + pow (senderStatus.y - receiverStatus.y, 2));
+              double ideaAtten = -46.6777 - 10*1.5*log10(dist);
+              //std::cout<< Simulator::Now ()<<" atten: "<< at <<" dist: "<< dist <<" ideaAtten: "<< ideaAtten << std::endl;
+              std::cout<< at <<" "<< ideaAtten << " "<<at + ideaAtten << " "<< dist <<std::endl;
+            }
+          }
         }
+        */
 
 
         if (hdr.IsData () || hdr.IsMgt ())
@@ -1565,7 +1596,6 @@ rxPacket:
   void
     MacLow::SendDataPacket (void)
     {
-      //std::cout<<m_self.GetNodeId () <<" sending data packet: "<< std::endl;
       NS_LOG_FUNCTION (this);
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
@@ -1606,8 +1636,13 @@ rxPacket:
         }
       }
       m_currentHdr.SetDuration (duration);
-      m_currentHdr.SetSequenceNumber (m_sequenceNumber); // set sequence number for packets at data channel.
-      m_sequenceNumber ++ ;
+      if (m_phy->GetChannelNumber () == DATA_CHANNEL )
+      {
+        m_currentHdr.SetSequenceNumber (m_sequenceNumber); // set sequence number for packets at data channel.
+        //std::cout<<m_self.GetNodeId () <<" sending data packet with sequence number: "<< m_sequenceNumber << std::endl;
+        m_sequenceNumber ++ ;
+      }
+      //std::cout<<m_self.GetNodeId () <<" sending data packet control channel " << std::endl;
 
       //---------Add txPower---------------------------------------
       uint8_t payload[DEFAULT_PACKET_LENGTH];

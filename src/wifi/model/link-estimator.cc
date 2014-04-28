@@ -22,7 +22,7 @@ namespace ns3
   LinkEstimator::LinkEstimator ()
   {
     m_coefficient = 0.8;
-    m_maxExpireTime = Seconds (100.0);
+    m_maxExpireTime = Seconds (OBSERVATION_EXPIRATION_TIME);
   }
 
 
@@ -34,6 +34,7 @@ namespace ns3
    */
   void LinkEstimator::AddSequenceNumber (uint32_t seq, uint16_t sender, uint16_t receiver, Time timeStamp)
   {
+    seq = seq % 4096;
     for (std::vector<LinkEstimationItem>::iterator it = m_estimations.begin (); it != m_estimations.end (); ++ it)
     {
       if (it->sender == sender && it->receiver == receiver)
@@ -60,9 +61,18 @@ namespace ns3
 
   }
 
+  void LinkEstimator::PrintSeqNumbers (std::vector<uint32_t> &vec)
+  {
+    std::cout<<" print out received sequence number" << std::endl;
+    for (std::vector<uint32_t>::iterator it = vec.begin (); it != vec.end (); ++ it)
+    {
+      std::cout<<*it<<" ";
+    }
+    std::cout<<std::endl;
+  }
   void LinkEstimator::InsertSeqNumber (std::vector<uint32_t> &vec, uint32_t seq)
   {
-    std::sort (vec.begin (), vec.end ()); // use < as default comparator.
+    //std::sort (vec.begin (), vec.end ()); // use < as default comparator.
     for (std::vector<uint32_t>::iterator it = vec.begin (); it != vec.end (); ++ it)
     {
       if (seq == *it)
@@ -78,6 +88,7 @@ namespace ns3
     vec.push_back (seq);
   }
 
+  //over flow taken care of.
   bool LinkEstimator::IsPdrUpdated (uint16_t sender, uint16_t receiver, uint32_t window)
   {
     for (std::vector<LinkEstimationItem>::iterator it = m_estimations.begin (); it != m_estimations.end (); ++ it)
@@ -86,7 +97,7 @@ namespace ns3
       {
 
         uint32_t _first = it->receivedSequenceNumbers[0];
-        uint32_t _last = it->receivedSequenceNumbers[ it->receivedSequenceNumbers.size () - 1];
+        uint32_t _last = it->receivedSequenceNumbers[it->receivedSequenceNumbers.size () - 1];
         if (_last - _first > 2000 ) //4096 overflow
         {
           for (std::vector<uint32_t>::iterator _it = it->receivedSequenceNumbers.begin (); 
@@ -99,10 +110,25 @@ namespace ns3
           }
         }
         sort (it->receivedSequenceNumbers.begin (), it->receivedSequenceNumbers.end ());
+        _first = it->receivedSequenceNumbers[0];
+        _last = it->receivedSequenceNumbers[it->receivedSequenceNumbers.size () - 1];
         if (_last - _first + 1 >= window)
         {
+          /*
+          if ( sender == 15)
+          {
+            PrintSeqNumbers (it->receivedSequenceNumbers);
+            std::cout<<"_last: "<< _last <<" _first: "<< _first << std::endl;
+          }
+          */
           it->instantPdr = (double)(it->receivedSequenceNumbers.size ()) / (_last - _first + 1);
           it->ewmaPdr = (1-m_coefficient) * it->ewmaPdr + m_coefficient * it->instantPdr;
+          /*
+          if ( sender == 15)
+          {
+            std::cout<<"sender: "<< sender <<" receiver: "<< receiver <<" instantPdr: "<< it->instantPdr <<" ewmaPdr: "<< it->ewmaPdr << std::endl;
+          }
+          */
           it->receivedSequenceNumbers.clear ();
           return true;
         }
@@ -112,6 +138,7 @@ namespace ns3
         }
       }
     }
+    return false;
   }
 
   LinkEstimationItem LinkEstimator::GetLinkEstimationItem (uint16_t sender, uint16_t receiver)
@@ -123,5 +150,9 @@ namespace ns3
         return *it;
       }
     }
+    LinkEstimationItem item;
+    item.sender = 0;
+    item.receiver = 0;
+    return item;
   }
 }

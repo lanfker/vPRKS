@@ -30,7 +30,7 @@ namespace ns3
   {
     NS_LOG_FUNCTION (this);
   }
-  const double Controller::m_pdrToSnr[446][2] = {
+  const double Controller::m_pdrToSnr[ARRAY_LENGTH][2] = {
     {5.07629,1.11022e-16},
     {5.08629,3.33067e-16},
     {5.09629,1.44329e-15},
@@ -485,9 +485,9 @@ namespace ns3
       currentPdr = 0.002;
     }
     uint32_t targetIndex = 0;
-    for (uint32_t i = 0; i < 446; ++ i)
+    for (uint32_t i = 0; i < ARRAY_LENGTH; ++ i)
     {
-      if ( currentPdr >= Controller::m_pdrToSnr[i][1])
+      if ( currentPdr <= Controller::m_pdrToSnr[i][1])
       {
         targetIndex = i;
         break;
@@ -508,6 +508,7 @@ namespace ns3
 
     double slope = 0.0;
     slope = deltaPdr/deltaSnr; // the slope at the point PDR=currentPdr in the SNR-to-PDR curve.
+    //std::cout<<" deltaPdr: "<< deltaPdr <<" deltaSnr: "<< deltaSnr <<" currentPdr: "<< currentPdr <<" targetIndex: "<< targetIndex << std::endl;
     return slope;
   }
 
@@ -519,7 +520,7 @@ namespace ns3
     }
 
     uint32_t targetIndex = 0;
-    for (uint32_t i = 0; i < 446; ++ i)
+    for (uint32_t i = 0; i < ARRAY_LENGTH; ++ i)
     {
       if ( pdr >= Controller::m_pdrToSnr[i][1])
       {

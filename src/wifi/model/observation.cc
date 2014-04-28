@@ -114,6 +114,41 @@ namespace ns3
     for (std::vector<LinkObservations>::iterator it = m_observations.begin (); it != m_observations.end ();
         ++ it)
     {
+      double x = 0, y = 0;
+      if ( it->sender == sender && it->observations.size () > 0)
+      {
+        ObservationItem item = it->observations[0];
+        x = item.senderX;
+        y = item.senderY;
+      }
+
+      for (std::vector<LinkObservations>::iterator _it = m_observations.begin (); _it != m_observations.end (); ++ _it)
+      {
+        if ( _it->sender == sender && _it->observations.size () > 0)  // has observation
+        {
+          ObservationItem item = _it->observations[0];
+          if ( item.senderX == x && item.senderY == y)
+          {
+            double dt = sqrt ( pow (senderX - item.senderX, 2) + pow (senderY - item.senderY, 2));
+            double dr = sqrt ( pow (receiverX - item.receiverX, 2) + pow (receiverY - item.receiverY, 2));
+            double dist = sqrt (dt*dt + dr*dr);
+            if ( dist <= LINK_DISTANCE_THRESHOLD)
+            {
+              //std::cout<<" x: "<< x <<" y: "<< y <<" senderx: "<< item.senderX <<" sendery: "<< senderY << std::endl;
+              vec.push_back (item);
+            }
+          }
+        }
+      }
+      if ( vec.size () >= 3)
+        return vec;
+      else
+      {
+        vec.clear ();
+        continue;
+      }
+      /*
+
       if ( it->sender == sender)
       {
         if ( it->observations.size () > 0)
@@ -129,6 +164,7 @@ namespace ns3
           }
         }
       }
+      */
     }
     return vec;
   }

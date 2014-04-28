@@ -27,6 +27,7 @@ namespace ns3{
       ~LinkEstimator ();
       void AddSequenceNumber (uint32_t seq, uint16_t sender, uint16_t receiver, Time timeStamp);
       void InsertSeqNumber (std::vector<uint32_t> &vec, uint32_t seq);
+      void PrintSeqNumbers (std::vector<uint32_t> &vec);
       bool IsPdrUpdated (uint16_t sender, uint16_t receiver, uint32_t window);
       LinkEstimationItem GetLinkEstimationItem (uint16_t sender, uint16_t receiver);
     private:
