@@ -3,6 +3,7 @@
 #include <iostream>
 #include <algorithm>
 #include <set>
+#include <cmath>
 
 NS_LOG_COMPONENT_DEFINE ("SignalMap");
 
@@ -35,8 +36,9 @@ namespace ns3
         it->attenuation = item.attenuation;
         it->timeStamp = item.timeStamp;
         it->angle = item.angle;
-        it->begin = item.begin;
-        it->end = item.end;
+        it->x = item.x;
+        it->y = item.y;
+        it->edge = item.edge;
         return;
       }
     }
@@ -46,6 +48,7 @@ namespace ns3
     m_signalMap.push_back (item);
     NS_LOG_DEBUG ("New item added, signal map size: "<< m_signalMap.size ());
   }
+
   SignalMapItem SignalMap::FetchSignalMapItem (uint16_t from, uint16_t to)
   {
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
@@ -100,7 +103,8 @@ namespace ns3
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
       std::cout<<"from: "<<it->from<<" to: "<<it->to <<" Atten: "<< it->attenuation <<" timestamp: "<< it->timeStamp 
-        <<" angle: "<< it->angle <<" begin: "<< it->begin <<" end: "<< it->end<<" exclusionRegion: "<< it->exclusionRegion << std::endl;
+        <<" angle: "<< it->angle <<" exclusionRegion: "<< it->exclusionRegion 
+        <<" x: "<<it->x <<" y: "<< it->y <<" edge: "<< it->edge << std::endl;
     }
     std::cout<<"--------------------------------------------------"<< std::endl;
   }
@@ -110,70 +114,18 @@ namespace ns3
     return m_signalMap.size ();
   }
 
-  DirectionDistribution SignalMap::GetDirectionDistribution (double angle)
-  {
-    DirectionDistribution directionDistribution;
-    directionDistribution.ratio[0] = 0;
-    directionDistribution.ratio[1] = 0;
-    directionDistribution.ratio[2] = 0;
-    directionDistribution.ratio[3] = 0;
-    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
-    {
-      if ( it->angle < -90 && it->angle >= -180)
-      {
-        directionDistribution.ratio[2] += 1;
-      }
-      else if (it->angle >= -90 && it->angle < 0)
-      {
-        directionDistribution.ratio[3] += 1;
-      }
-      if (it->angle > 90 && it->angle >= 180)
-      {
-        directionDistribution.ratio[1] += 1;
-      }
-      else if (it->angle <= 90 && it->angle >= 0)
-      {
-        directionDistribution.ratio[0] += 1;
-      }
-    }
-    if ( angle >= 0 && angle <= 90)
-    {
-      directionDistribution.selfSector = 0;
-      directionDistribution.ratio[0] += 1;
-    }
-    else if ( angle > 90 && angle <= 180)
-    {
-      directionDistribution.selfSector = 1;
-      directionDistribution.ratio[1] += 1;
-    }
-    else if ( angle >= -90 && angle < 0)
-    {
-      directionDistribution.selfSector = 3;   
-      directionDistribution.ratio[3] += 1;
-    }
-    else if (angle < -90 && angle >= -180)
-    {
-      directionDistribution.selfSector = 2;
-      directionDistribution.ratio[2] += 1;
-    }
-    double signalMapSize = GetSize () + 1; // considering the node itself, so add one.
-
-    directionDistribution.ratio[0] /= signalMapSize;
-    directionDistribution.ratio[1] /= signalMapSize;
-    directionDistribution.ratio[2] /= signalMapSize;
-    directionDistribution.ratio[3] /= signalMapSize;
-    //std::cout<<" angle: "<< angle <<" sector: "<< directionDistribution.selfSector << std::endl;
-    return directionDistribution;
-  }
 
   void SignalMap::GetConflictNodes (uint16_t slot, std::vector<uint16_t> &vec)
   {
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
+      /*
       if ( it->begin <= slot && it->end >= slot)
       {
         vec.push_back (it->from);
       }
+      */
+      return;
     }
   }
 
@@ -188,15 +140,16 @@ namespace ns3
     SortAccordingToAttenuation ();
   }
 
-  void SignalMap::UpdateVehicleStatus (uint16_t from, double angle, uint16_t begin, uint16_t end)
+  void SignalMap::UpdateVehicleStatus (uint16_t from, double angle, double x, double y, std::string edge)
   {
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
       if (it->from == from)
       {
         it->angle = angle;
-        it->begin = begin;
-        it->end = end;
+        it->x = x;
+        it->y = y;
+        it->edge = edge;
         continue;
       }
     } 
@@ -259,4 +212,130 @@ namespace ns3
     return m_signalMap;
   }
 
+  SignalMap::SignalMap (std::vector<SignalMapItem> vec)
+  {
+    for (std::vector<SignalMapItem>::iterator it = vec.begin (); it != vec.end (); ++ it)
+    {
+      AddOrUpdate (*it);
+    }
+    SortAccordingToAttenuation ();
+  }
+
+  std::vector<RoadVehicleItem> SignalMap::ComputeVehicleDirectionDistribution ()
+  {
+    std::vector<RoadVehicleItem> vec;
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      for (std::vector<RoadMapEdge>::iterator edgeIt = EdgeXmlParser::m_mapEdges.begin (); edgeIt != EdgeXmlParser::m_mapEdges.end (); ++ edgeIt)
+      {
+        //std::cout<<" edgeid: "<< edgeIt->edgeId << std::endl;
+        double x1,x2,y1,y2;
+        x1 = edgeIt->from.xCoordinate;
+        x2 = edgeIt->to.xCoordinate;
+        y1 = edgeIt->from.yCoordinate;
+        y2 = edgeIt->to.yCoordinate;
+        //double length = sqrt ( pow (it->x - m_x, 2) + pow (it->y - m_y, 2));
+        // in this road segment.
+        if ( it->edge == edgeIt->edgeId) 
+        {
+          bool found = false;
+          for ( std::vector<RoadVehicleItem>::iterator vecIt = vec.begin (); vecIt != vec.end (); ++ vecIt)
+          {
+            if (vecIt->edge.edgeId == edgeIt->edgeId)
+            {
+              found = true;
+              vecIt->vehicleCount += 1;
+              if ( it->x != vecIt->minX)
+              {
+                if ( it->x < vecIt->minX)
+                {
+                  vecIt->minX = it->x;
+                  vecIt->minY = it->y;
+                }
+                else if ( it->x > vecIt->maxX)
+                {
+                  vecIt->maxX = it->x;
+                  vecIt->maxY = it->y;
+                }
+              }
+              else if ( it->y != vecIt->minY)
+              {
+                if (it->y < vecIt->minY)
+                {
+                  vecIt->minX = it->x;
+                  vecIt->minY = it->y;
+                }
+                else if (it->y > vecIt->maxY)
+                {
+                  vecIt->maxX = it->x;
+                  vecIt->maxY = it->y;
+                }
+              }
+              break;
+            }
+          }
+          if ( found == false)
+          {
+            RoadVehicleItem item;
+            item.edge = *edgeIt;
+            item.roadLength = 0;
+            item.minX = it->x;
+            item.maxX = it->x;
+            item.minY = it->y;
+            item.maxY = it->y;
+            item.vehicleCount = 1;
+            item.angle = it->angle;
+            vec.push_back (item);
+          }
+        } 
+        //Not in this road segment
+        else
+        {
+          //std::cout<<" not on road: "<< edgeIt->edgeId << std::endl;
+          continue;
+        }
+      }
+    }
+    for ( std::vector<RoadVehicleItem>::iterator vecIt = vec.begin (); vecIt != vec.end (); ++ vecIt)
+    {
+      vecIt->roadLength = sqrt (pow (vecIt->minX - vecIt->maxX, 2) + pow (vecIt->minY - vecIt->maxY, 2));
+      if ( vecIt->roadLength > 0)
+      {
+        vecIt->density = vecIt->vehicleCount * 100.0 / vecIt->roadLength; // again, unit length is 100 meters
+      }
+      else 
+      {
+        vecIt->density = 0;
+      }
+      //std::cout<<" edge: "<< vecIt->edge.edgeId <<" length: "<< vecIt->roadLength <<" count: "<< vecIt->vehicleCount <<" angle: "<< vecIt->angle<< " minX: "<< vecIt->minX <<" minY: "<< vecIt->minY <<" maxX: "<< vecIt->maxX <<" maxY: "<< vecIt->maxY << std::endl;
+      
+    }
+    return vec;
+  }
+
+  void SignalMap::SetXY (double x, double y)
+  {
+    m_x = x;
+    m_y = y;
+  }
+
+  void SignalMap::InsertDensityEstimation (uint16_t vehicleId, std::string edgeId, double density)
+  {
+    for (std::vector<DensityEstimation>::iterator it = m_densityEstimationVector.begin (); 
+        it != m_densityEstimationVector.end (); ++ it)
+    {
+      if ( it->edgeId == edgeId )
+      {
+        it->density = it->density * EWMA_COEFFICIENT + (1 - EWMA_COEFFICIENT) * density;
+        it->timeStamp = Simulator::Now ();
+        return;
+      }
+    }
+  }
+  DensityEstimation item;
+  item.vehicleId = vehicleId;
+  item.edgeId = edgeId;
+  item.density = density;
+  item.timeStamp = Simulator::Now ();
+  m_densityEstimationVector.push_back (item);
 }

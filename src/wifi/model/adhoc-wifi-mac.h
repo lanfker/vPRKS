@@ -63,6 +63,7 @@ public:
 
   void SetAngle (double angle);
   void SetPosition (double x, double y);
+  void SetEdge (std::string edge);
 
 private:
   virtual void Receive (Ptr<Packet> packet, const WifiMacHeader *hdr);

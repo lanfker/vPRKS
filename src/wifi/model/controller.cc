@@ -671,7 +671,7 @@ namespace ns3
     slope = Controller::ComputeSlope (ewmaCurrentPdr);
 #endif
     double deltaInterferenceDb = (m_ewmaCoefficient * ewmaCurrentPdr + (1 - m_ewmaCoefficient) * estimatedCurrentPdr - desiredPdr - m_deltaY ) /((1 - m_ewmaCoefficient) * slope);
-    std::cout<<" controller: desired.pdr: "<<desiredPdr <<" ewma.current.pdr: "<< ewmaCurrentPdr <<" estimated.current.pdr: "<< estimatedCurrentPdr <<" delta.interference.db: "<< deltaInterferenceDb <<" 1/((1-m_ewmaCoefficient)*slope): "<< 1 / ((1- m_ewmaCoefficient) * slope )<<" slope: "<< slope << std::endl;
+    //std::cout<<" controller: desired.pdr: "<<desiredPdr <<" ewma.current.pdr: "<< ewmaCurrentPdr <<" estimated.current.pdr: "<< estimatedCurrentPdr <<" delta.interference.db: "<< deltaInterferenceDb <<" 1/((1-m_ewmaCoefficient)*slope): "<< 1 / ((1- m_ewmaCoefficient) * slope )<<" slope: "<< slope << std::endl;
     return deltaInterferenceDb;
   }
 }

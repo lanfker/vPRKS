@@ -17,6 +17,7 @@
 #include <cstring>
 #include <vector>
 #include <cstdlib>
+#include <cmath>
 
 #include "ns3/log.h"
 
@@ -127,5 +128,18 @@ namespace ns3{
       EdgeXmlParser::m_mapEdges.push_back (edge);
     }
     XMLString::release (&name);
+  }
+
+  void EdgeXmlParser::CalculateLinearModel (RoadMapEdge edge, double &a, double &b, double &length)
+  {
+    double x1,x2,y1,y2;
+    x1 = edge.from.xCoordinate;
+    x2 = edge.to.xCoordinate;
+    y1 = edge.from.yCoordinate;
+    y2 = edge.to.yCoordinate;
+
+    a = (y1-y2) / (x1-x2);
+    b = y1 - a * x1;
+    length = sqrt ( pow (x1-x2,2) + pow (y1-y2, 2));
   }
 }

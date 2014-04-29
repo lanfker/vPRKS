@@ -193,6 +193,11 @@ void AdhocWifiMac::SetAngle (double angle)
 {
   m_low->SetAngle (angle);
 }
+
+void AdhocWifiMac::SetEdge (std::string edge)
+{
+  m_low->SetEdge (edge);
+}
 void AdhocWifiMac::SetPosition (double x, double y)
 {
   m_low -> SetPosition (x, y);

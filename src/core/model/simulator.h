@@ -65,9 +65,10 @@ typedef struct SignalMapItem
   double attenuation;
   Time timeStamp;
   double angle;
-  uint16_t begin; // record active slot for 'from'
-  uint16_t end; // record active slot fro 'from'
   double exclusionRegion;// dBm
+  double x;
+  double y;
+  std::string edge;
 }SignalMapItem;
 #endif 
 #ifndef NODE_STATUS

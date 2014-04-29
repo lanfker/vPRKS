@@ -33,6 +33,9 @@ namespace ns3 {
       //void characters (const XMLCh* const, const unsigned int);
 
       static void ParseEdgeXmlFile (const string & filename);
+      /* Here, we want to compute a line model y = ax + b given that we have two points known.
+       */
+      static void CalculateLinearModel (RoadMapEdge edge, double &a, double &b, double &length);
 
       static vector<RoadMapEdge> m_mapEdges;
   };

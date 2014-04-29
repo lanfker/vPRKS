@@ -3,9 +3,12 @@
 
 const uint32_t DEFAULT_PACKET_LENGTH = 1000;
 const uint32_t DEFAULT_WIFI_DEVICE_INDEX = 0;
-const double DEFAULT_EXCLUSION_REGION = -120; //dbm
+const double DEFAULT_EXCLUSION_REGION = -90.4397; //dbm
+const double DEFAULT_EXCLUSION_REGION_WATT = 9.0371e-13;//Watt
 const uint64_t PAKCET_GENERATION_INTERVAL = 100;// in milliseconds. This is the default interval for safety message.
+const double NOISE = 2.00619e-13; //Watt   -96.976279387 dBm
 const double DESIRED_PDR = 0.8;
+const double EWMA_COEFFICIENT = 0.8;
 const uint32_t LINKE_ESTIMATOR_WINDOW_SIZE = 20;
 const double LINK_DISTANCE_THRESHOLD = 500;
 const uint64_t OBSERVATION_EXPIRATION_TIME = 240; //seconds

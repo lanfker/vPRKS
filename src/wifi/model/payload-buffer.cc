@@ -99,4 +99,35 @@ namespace ns3
       ReadDouble ();
     }
   }
+
+  uint32_t PayloadBuffer::WriteString (std::string str)
+  {
+    //std::cout<<" write string: "<< str << std::endl;
+    uint32_t size = str.size ();
+    uint32_t writeCount = 0;
+    uint8_t* ptr = (uint8_t *) str.c_str ();
+    for (uint32_t i = 0; i < size; ++ i)
+    {
+      WriteU8 (*(ptr + i));
+      writeCount ++ ;
+    }
+    return writeCount;
+  }
+
+  std::string PayloadBuffer::ReadString (uint32_t length)
+  {
+    std::string str;
+    for (uint32_t i = 0; i < length; ++ i)
+    {
+      uint8_t ch = ReadU8 ();
+      str.push_back ((char)ch);
+    }
+    //std::cout<<" read string: "<< str << std::endl;
+    return str;
+  }
+
+  void PayloadBuffer::Rewind (uint32_t offset)
+  {
+    m_current -= offset;
+  }
 }

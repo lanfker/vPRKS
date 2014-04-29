@@ -154,6 +154,7 @@ namespace ns3
     NodeXmlParser::ParseNodeXmlFile ("scratch/cross.nod.xml");
     EdgeXmlParser::ParseEdgeXmlFile ("scratch/cross.edg.xml");
 
+
     //------------------------------------------------------------------------------------------------
 
 

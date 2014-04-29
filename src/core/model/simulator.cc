@@ -413,8 +413,7 @@ namespace ns3 {
       {
         for (std::vector<SignalMapItem>::iterator _it = it->localSignalMap.begin (); _it != it->localSignalMap.end (); ++ _it)
         {
-          std::cout<<"from: "<< _it->from<<" to: "<< _it->to <<" atten: "<< _it->attenuation <<" angle: "<< _it->angle <<" begin: "<< _it->begin 
-            <<" end: "<< _it->end <<" exclusion region: "<< _it->exclusionRegion << std::endl;
+          std::cout<<"from: "<< _it->from<<" to: "<< _it->to <<" atten: "<< _it->attenuation <<" angle: "<< _it->angle <<" exclusion region: "<< _it->exclusionRegion <<" x: "<< _it->x <<" y: "<< _it->y<<" edge: "<< _it->edge << std::endl;
         }
 
         return;

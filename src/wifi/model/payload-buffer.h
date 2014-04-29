@@ -19,10 +19,13 @@ namespace ns3{
       uint8_t ReadU8 ();
       uint16_t ReadU16 ();
       uint32_t CheckRemainBytes (uint32_t bufferLength);
+      void Rewind (uint32_t offset);
 
       void WriteU8 (uint8_t value);
       void WriteU16 (uint16_t value);
       void WriteDouble (double value);
+      uint32_t WriteString (std::string str);
+      std::string ReadString (uint32_t length);
 
       void ReSetPointer ();
 

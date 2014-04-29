@@ -36,25 +36,28 @@ namespace ns3
       uint16_t sender, uint16_t receiver, double txPower)
   {
 
+    signalMap.PrintSignalMap (receiver);
     txPower = txPower + TX_GAIN;
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)
     {
       if ( it->sender == sender && it->receiver == receiver)
       {
-        if (deltaInterference < 0)
+        if (deltaInterference < 0) // expand exclusion region
         {
           signalMap.SortAccordingToAttenuation ();
           uint32_t offset = 0;
           for (SignalMap::Iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
           {
             double interferenceW = DbmToW (txPower - _it->attenuation );
+            //std::cout<<" currentExclusionRegion: "<< it->currentExclusionRegion << " interferenceW: " << interferenceW << " atten: "<< _it->attenuation << std::endl;
+            offset = _it - signalMap.begin ();
             if ( interferenceW <= it->currentExclusionRegion) //find edge.
             {
-              offset = _it - signalMap.begin ();
               break;
             }
           }
+          //std::cout<<" offset: "<< offset << std::endl;
 
           double interferenceSum = 0;
           for (SignalMap::Iterator _it = signalMap.begin () + offset; _it != signalMap.end (); ++ _it)
@@ -69,24 +72,29 @@ namespace ns3
           }
           // if we used all the signal map records, yet we still cannot satisfy the delta interference requirement,
           // we use the last item in the signal map as  current exlusion region
-          it -> currentExclusionRegion = DbmToW ( txPower - (signalMap.end () - 1) -> attenuation );
+          double lastElementInterferenceW = DbmToW ( txPower - (signalMap.end () - 1) -> attenuation );
+          if ( lastElementInterferenceW < it->currentExclusionRegion)
+            it -> currentExclusionRegion = lastElementInterferenceW;
           return it->currentExclusionRegion;
         }
-        else if (deltaInterference > 0)
+        else if (deltaInterference > 0) // shrink exclusion region
         {
           signalMap.SortAccordingToAttenuation ();
           uint32_t offset = 0;
           for (SignalMap::Iterator _it = signalMap.end () -1; _it != signalMap.begin () - 1; -- _it)
           {
             double interferenceW = DbmToW (txPower - _it->attenuation );
+            offset = signalMap.end () - _it;
             if ( interferenceW >= it->currentExclusionRegion)
             {
-              offset = signalMap.end () - _it;
               break;
             }
           }
 
           double interferenceSum = 0;
+          // when the last signal map record introduce larger interference than the exclusion region, the offset is 1. 
+          // we set the offset as 1 so that in the for loop, we can simply substract offset.
+          // again, if the offset is one, the for loop will not execute.
           for (SignalMap::Iterator _it = signalMap.end () - offset; _it != signalMap.end () - 1; -- _it)
           {
             double interferenceW = DbmToW (txPower - _it->attenuation );
@@ -116,17 +124,17 @@ namespace ns3
           // if we used all the signal map records, yet we still cannot satisfy the delta interference requirement,
           // we use the first item in the signal map as  current exlusion region in this case
         }
-        else if (deltaInterference == 0)
+        else if (deltaInterference == 0) //keep unchanged.
         {
           return it->currentExclusionRegion;
         }
       }
-      return 0;
+      return it->currentExclusionRegion;
     }
     LinkExclusionRegion linkExclusionRegion;
     linkExclusionRegion.sender = sender;
     linkExclusionRegion.receiver = receiver;
-    linkExclusionRegion.currentExclusionRegion = 2.01237e-13; //watt  Default exclusion region, will change later 
+    linkExclusionRegion.currentExclusionRegion = DEFAULT_EXCLUSION_REGION_WATT; //watt  Default exclusion region, will change later 
     m_exclusionRegionCollection.push_back (linkExclusionRegion);
     return linkExclusionRegion.currentExclusionRegion;
     /*

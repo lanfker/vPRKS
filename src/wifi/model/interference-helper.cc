@@ -221,6 +221,7 @@ InterferenceHelper::CalculateSnr (double signal, double noiseInterference, WifiM
   double Nt = BOLTZMANN * 290.0 * mode.GetBandwidth ();
   // receiver noise Floor (W) which accounts for thermal noise and non-idealities of the receiver
   double noiseFloor = m_noiseFigure * Nt;
+  //std::cout<<" noise floow: "<< noiseFloor<< std::endl;
   double noise = noiseFloor + noiseInterference;
   double snr = signal / noise;
   return snr;
