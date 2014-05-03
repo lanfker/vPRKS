@@ -51,6 +51,7 @@ namespace ns3
   {
     if (HostRunning () ==  false )
     {
+      StopApplication ();
       return;
     }
     if (Simulator::Now () >= m_stopTime)
@@ -116,6 +117,7 @@ namespace ns3
     
     if (HostRunning () ==  false )
     {
+      StopApplication ();
       return;
     }
     // need to stop application, terminate simulation
@@ -124,6 +126,10 @@ namespace ns3
       return;
     }
 
+    if ( GetNode ()->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac () == NULL)
+    {
+      return;
+    }
     Ptr<AdhocWifiMac> mac = GetNode ()->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac ()->GetObject<AdhocWifiMac> ();
     
     Mac48Address addr1 = Mac48Address::GetBroadcast ();

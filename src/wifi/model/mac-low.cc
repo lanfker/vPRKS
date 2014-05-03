@@ -2310,6 +2310,7 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
+    std::cout<<" in calculate schedule in mac-low.cc"<< std::endl;
 
     //DATA CHANNEL 1
     if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )

@@ -25,6 +25,7 @@
 #include "ns3/callback.h"
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
+#include "ns3/event-id.h"
 #include "ns3/object.h"
 #include "ns3/wifi-mac-header.h"
 #include "ns3/wifi-mode.h"
@@ -167,6 +168,7 @@ private:
   Ptr<WifiRemoteStationManager> m_stationManager;
   TransmissionListener *m_transmissionListener;
   RandomStream *m_rng;
+  EventId  m_scheduleCalculateEvent;
 
 
   bool m_accessOngoing;

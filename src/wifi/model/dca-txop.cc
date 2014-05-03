@@ -25,6 +25,7 @@
 #include "ns3/node.h"
 #include "ns3/uinteger.h"
 #include "ns3/pointer.h"
+#include "ns3/event-id.h"
 
 #include "dca-txop.h"
 #include "dcf-manager.h"
@@ -134,7 +135,7 @@ DcaTxop::DcaTxop ()
   m_queue = CreateObject<WifiMacQueue> ();
   m_rng = new RealRandomStream ();
   m_txMiddle = new MacTxMiddle ();
-  Simulator::Schedule (Seconds (START_PROCESS_TIME), &DcaTxop::CalculateSchedule, this);
+  m_scheduleCalculateEvent = Simulator::Schedule (Seconds (START_PROCESS_TIME), &DcaTxop::CalculateSchedule, this);
 }
 
 DcaTxop::~DcaTxop ()
@@ -146,6 +147,7 @@ void
 DcaTxop::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
+  m_scheduleCalculateEvent.Cancel ();
   m_queue = 0;
   m_low = 0;
   m_stationManager = 0;
@@ -171,7 +173,7 @@ void DcaTxop::CalculateSchedule ()
     {
       m_low->CalculateSchedule ();
     }
-    Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &DcaTxop::CalculateSchedule, this);
+    m_scheduleCalculateEvent =  Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &DcaTxop::CalculateSchedule, this);
   }
 }
 
@@ -279,6 +281,7 @@ DcaTxop::Queue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
   m_stationManager->PrepareForQueue (hdr.GetAddr1 (), &hdr,
                                      packet, fullPacketSize);
   m_queue->Enqueue (packet, hdr);
+  //std::cout<<" just enqueue a packet, the method returns: "<< QueueEmpty () << std::endl;
   StartAccessIfNeeded ();
 }
 
