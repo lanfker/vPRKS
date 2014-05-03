@@ -388,7 +388,7 @@ namespace ns3 {
     m_nextSendingSlot = 0;
     // Update slot number when it should be incremented
     Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::GetCurrentSlot, this);
-    Simulator::Schedule (Seconds (START_PROCESS_TIME), &MacLow::CalculateSchedule, this);
+    //Simulator::Schedule (Seconds (START_PROCESS_TIME), &MacLow::CalculateSchedule, this);
   }
 
   MacLow::~MacLow ()
@@ -2310,13 +2310,6 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
-    //Queue Empty
-    std::cout<<Simulator::Now () <<" checking"<< std::endl;
-    if ( m_queueEmptyCallback () == true)
-    {
-      Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
-      return;
-    }
 
     //DATA CHANNEL 1
     if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
@@ -2342,7 +2335,7 @@ rxPacket:
       //=====================Then Check If I Can Receive Packets=========================
       if ( ReceiveInCurrentSlot () == true)
       {
-        Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+        //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
         return;
         // Stay in Data Channel.
       }
@@ -2361,7 +2354,7 @@ rxPacket:
     {
       SendDataPacket ();
     }
-    Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+    //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
   }
 
   void MacLow::SetChannelNumber (uint32_t channelNumber)

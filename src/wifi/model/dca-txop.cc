@@ -134,6 +134,7 @@ DcaTxop::DcaTxop ()
   m_queue = CreateObject<WifiMacQueue> ();
   m_rng = new RealRandomStream ();
   m_txMiddle = new MacTxMiddle ();
+  Simulator::Schedule (Seconds (START_PROCESS_TIME), &DcaTxop::CalculateSchedule, this);
 }
 
 DcaTxop::~DcaTxop ()
@@ -156,6 +157,22 @@ DcaTxop::DoDispose (void)
   m_dcf = 0;
   m_rng = 0;
   m_txMiddle = 0;
+}
+
+void DcaTxop::CalculateSchedule ()
+{
+  if ( m_low == 0)
+  {
+    return;
+  }
+  else 
+  {
+    if ( QueueEmpty () == false)
+    {
+      m_low->CalculateSchedule ();
+    }
+    Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &DcaTxop::CalculateSchedule, this);
+  }
 }
 
 void
@@ -191,7 +208,7 @@ void DcaTxop::SetMaclowListener () const
 
 bool DcaTxop::QueueEmpty()
 {
-  std::cout<<" m_queue: "<< m_queue<< std::endl;
+  //std::cout<<" m_queue: "<< m_queue<< std::endl;
   return m_queue->IsEmpty ();
 }
 

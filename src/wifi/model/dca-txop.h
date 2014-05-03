@@ -111,6 +111,7 @@ public:
   void SetMaclowListener () const;
   bool QueueEmpty();
   void DequeuePacketAndSetCurrentPacket ();
+  void CalculateSchedule ();
 private:
   class TransmissionListener;
   class NavListener;
