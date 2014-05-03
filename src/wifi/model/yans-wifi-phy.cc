@@ -841,7 +841,7 @@ maybeCcaBusy:
       }
     }
 
-  Time YansWifiPhy::GetSwithcingDelay ()
+  Time YansWifiPhy::GetSwitchingDelay ()
   {
     return m_channelSwitchDelay;
   }

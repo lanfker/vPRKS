@@ -404,6 +404,22 @@ namespace ns3 {
     return vec;
   }
 
+  void Simulator::UpdateLinkExclusionRegion (uint16_t sender, uint16_t receiver, double exclusionRegion)
+  {
+    std::vector<SignalMapItem> vec = Simulator::GetSignalMap (receiver);
+    if ( vec.size () > 0)
+    {
+      for ( std::vector<SignalMapItem>::iterator it = vec.begin (); it != vec.end (); ++ it)
+      {
+        if ( it->from == sender && it->to == receiver)
+        {
+          it->exclusionRegion = exclusionRegion;
+          break;
+        }
+      }
+    }
+  }
+
   void Simulator::PrintSignalMaps(uint16_t nodeId)
   {
     std::cout<<"signal map for node: "<< nodeId << std::endl;

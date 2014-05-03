@@ -110,6 +110,7 @@ public:
   void SetCurrentPacket (WifiMacHeader hdr, Ptr<const Packet> pkt);
   void SetMaclowListener () const;
   bool QueueEmpty();
+  void DequeuePacketAndSetCurrentPacket ();
 private:
   class TransmissionListener;
   class NavListener;

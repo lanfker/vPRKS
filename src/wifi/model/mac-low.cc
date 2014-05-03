@@ -45,6 +45,7 @@
 #include "exclusion-region-helper.h"
 #include "controller.h"
 #include <cmath>
+#include <algorithm>
 
 NS_LOG_COMPONENT_DEFINE ("MacLow");
 
@@ -384,32 +385,10 @@ namespace ns3 {
     m_sequenceNumber = 4090;
     m_currentSlot = 0;
     m_angle = 0;
+    m_nextSendingSlot = 0;
     // Update slot number when it should be incremented
-    /*
-       Matrix test = Matrix (3,3);
-       test.SetValue (0, 0, 5);
-       test.SetValue (0, 1, 2);
-       test.SetValue (0, 2, 3);
-       test.SetValue (1, 0, 4);
-       test.SetValue (1, 1, 5);
-       test.SetValue (1, 2, 6);
-       test.SetValue (2, 0, 7);
-       test.SetValue (2, 1, 8);
-       test.SetValue (2, 2, 4);
-
-       Matrix times = Matrix (3, 2);
-       times.SetValue (0,0,2);
-       times.SetValue (0,1,1);
-       times.SetValue (1,0,4);
-       times.SetValue (1,1,7);
-       times.SetValue (2,0,9);
-       times.SetValue (2,1,2);
-       Matrix result = Matrix(3,2);
-       test.Product (times, result);
-       result.ShowMatrix ();
-       */
     Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::GetCurrentSlot, this);
-
+    Simulator::Schedule (Seconds (START_PROCESS_TIME), &MacLow::CalculateSchedule, this);
   }
 
   MacLow::~MacLow ()
@@ -675,9 +654,8 @@ namespace ns3 {
       }
       else
       {
-        CalculateSchedule (); 
-        // Here we control how packets need to be sent.
-        //SendDataPacket ();
+        if ( Simulator::Now () < Seconds (START_PROCESS_TIME))
+          SendDataPacket ();
       }
 
       /* When this method completes, we have taken ownership of the medium. */
@@ -746,16 +724,22 @@ namespace ns3 {
       uint32_t edgeLength = buff.ReadU8 ();
       std::string edge = buff.ReadString (edgeLength);
       m_signalMap.UpdateVehicleStatus (sender, angle, x, y, edge);
+      int64_t receivedNextSendingSlot = buff.ReadU64 ();
 
-      //============================Ready ===============================
+      UpdateSendingStatus (hdr.GetAddr2().GetNodeId (), receivedNextSendingSlot);
+      if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
+        std::cout<<m_self.GetNodeId ()<<" received nextsendingslot: "<< receivedNextSendingSlot <<" from: "<< hdr.GetAddr2 ().GetNodeId () << std::endl;
+
+      //============================Read shared Density info==============================
+      /*
       uint32_t densityCount = buff.ReadU8 ();
       for (uint32_t i = 0; i < densityCount; ++ i)
       {
         uint32_t edgeIdSize = buff.ReadU8 ();
         std::string edgeId = buff.ReadString (edgeIdSize);
         double density = buff.ReadDouble ();
-        //std::cout<<m_self.GetNodeId ()<<" edgeId: "<< edgeId <<" density: "<< density << " from: "<< hdr.GetAddr2 ().GetNodeId () << std::endl;
       }
+      */
 
 
       /*
@@ -781,8 +765,9 @@ namespace ns3 {
       signalMapItem.y = y;
       signalMapItem.edge = edge;
       m_signalMap.AddOrUpdate (signalMapItem);
+      // Here, we also fake signal map for now. Will update later.
       Simulator::UpdateSignalMap (m_self.GetNodeId (), m_signalMap.GetSignalMap ());
-      Simulator::PrintSignalMaps(m_self.GetNodeId ());
+      //Simulator::PrintSignalMaps(m_self.GetNodeId ());
       //============================================================================================
 
 
@@ -1073,6 +1058,8 @@ namespace ns3 {
           std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
           SignalMap signalMap = SignalMap (signalMapVec);
           double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER);
+          m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
+          Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
           //std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
         }
 
@@ -1428,7 +1415,7 @@ rxPacket:
           txPower = (uint32_t)attenuation + DELIVERY_100_SNR;
           txPower = txPower - DEFAULT_POWER;
           //std::cout<<" txPowerLevel: "<< txPower << std::endl;
-          txPower = 0; // to test double regression
+          //txPower = 0; // to test double regression
           m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, (uint8_t) txPower);
           //======================== POWER control for control signal =================
         }
@@ -1565,6 +1552,10 @@ rxPacket:
   void
     MacLow::StartDataTxTimers (void)
     {
+      if ( Simulator::Now () >= Seconds (START_PROCESS_TIME))
+      {
+        std::cout<<"m_currentPacket: "<< m_currentPacket <<" hdr: "<< &m_currentHdr<< std::endl;
+      }
       WifiMode dataTxMode = GetDataTxMode (m_currentPacket, &m_currentHdr);
       Time txDuration = m_phy->CalculateTxDuration (GetSize (m_currentPacket, &m_currentHdr), dataTxMode, WIFI_PREAMBLE_LONG);
       if (m_txParams.MustWaitNormalAck ())
@@ -1660,10 +1651,8 @@ rxPacket:
       if (m_phy->GetChannelNumber () == DATA_CHANNEL )
       {
         m_currentHdr.SetSequenceNumber (m_sequenceNumber); // set sequence number for packets at data channel.
-        //std::cout<<m_self.GetNodeId () <<" sending data packet with sequence number: "<< m_sequenceNumber << std::endl;
         m_sequenceNumber ++ ;
       }
-      //std::cout<<m_self.GetNodeId () <<" sending data packet control channel " << std::endl;
 
       //---------Add txPower---------------------------------------
       uint8_t payload[DEFAULT_PACKET_LENGTH];
@@ -1675,22 +1664,26 @@ rxPacket:
       buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
       buff.WriteU8 ((uint8_t)m_edge.size ());
       buff.WriteString (m_edge);
+      if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
+        std::cout<<m_self.GetNodeId () << " next sending slot: "<< m_nextSendingSlot << std::endl;
+
+      buff.WriteU64 (m_nextSendingSlot);
 
       //=========================Vehicle Density distribution
+      /*
       std::vector<RoadVehicleItem> directionDistribution =  m_signalMap.ComputeVehicleDirectionDistribution ();
       uint32_t count=0, totalBytes = 0;
       uint32_t remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
 
       std::vector<RoadVehicleItem> vec = CalculateLengthForDensityShare (directionDistribution, count, remainBytes, totalBytes);
-      //std::cout<<m_self.GetNodeId () <<"  is sending "<< std::endl;
       buff.WriteU8 ((uint8_t)count); // # of density estimation
       for (uint32_t i = 0; i < count; ++ i)
       {
         buff.WriteU8 ((uint8_t)vec[i].edge.edgeId.size()); // edge id length
         buff.WriteString (vec[i].edge.edgeId);
         buff.WriteDouble (vec[i].density);
-        //std::cout<<" edge: "<< vec[i].edge.edgeId <<" density: "<< vec[i].density << std::endl;
       }
+      */
 
       //Updating Node Status============
       NodeStatus status;
@@ -1703,9 +1696,9 @@ rxPacket:
       Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
       //Simulator::PrintNodeStatus (m_self.GetNodeId ());
 
-      remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
       //=============================Share observations===========================================
       /*
+      remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
       m_observation.RemoveExpireItems (Seconds(OBSERVATION_EXPIRATION_TIME), MAX_OBSERVATION_ITEMS_PER_LINK);
       std::vector<ObservationItem> vec = m_observation.FetchLinkObservationByReceiver (m_self.GetNodeId ());
       if ( remainBytes > 2)
@@ -2279,31 +2272,26 @@ rxPacket:
     m_listener = listener;
   }
 
-  int64_t MacLow::CalculatePriority (uint16_t nodeId)
+  int64_t MacLow::CalculatePriority (uint16_t nodeId, int64_t slot)
   {
-    int64_t slot = GetCurrentSlot ();
+    //int64_t slot = GetCurrentSlot ();
     int64_t seed = nodeId * 10000 + slot;
     srand (seed);
     int64_t priority = rand () * 10000 + nodeId;
     return abs (priority);
   }
 
-  bool MacLow::IsSelfMaximum (std::vector<uint16_t> conflictSet)
+  bool MacLow::IsSelfMaximum (std::vector<uint16_t> conflictSet, int64_t slot)
   {
-    int64_t selfPriority = CalculatePriority (m_self.GetNodeId ());
+    int64_t selfPriority = CalculatePriority (m_self.GetNodeId (), slot);
     int64_t maxPriority = selfPriority;
     for (std::vector<uint16_t>::iterator it = conflictSet.begin (); it != conflictSet.end (); ++ it)
     {
-      NodeStatus status = Simulator::GetNodeStatus (*it);
-      uint16_t relativeSlot = m_currentSlot % FRAME_LENGTH;
-      if ( relativeSlot >= status.begin && relativeSlot <= status.end )
-      {
-        if ( *it == m_self.GetNodeId ())
-          continue;
-        int64_t temp = CalculatePriority (*it);
-        if ( temp > maxPriority)
-          maxPriority = temp;
-      }
+      if ( *it == m_self.GetNodeId ())
+        continue;
+      int64_t temp = CalculatePriority (*it, slot);
+      if ( temp > maxPriority)
+        maxPriority = temp;
     }
     if (maxPriority == selfPriority)
       return true;
@@ -2313,6 +2301,7 @@ rxPacket:
 
   void MacLow::CalculateSchedule ()
   {
+    //==================Update Node Status========================================
     NodeStatus status;
     status.nodeId = m_self.GetNodeId ();
     status.begin = m_begin;
@@ -2321,29 +2310,63 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
+    //Queue Empty
+    std::cout<<Simulator::Now () <<" checking"<< std::endl;
+    if ( m_queueEmptyCallback () == true)
+    {
+      Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+      return;
+    }
+
     //DATA CHANNEL 1
     if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
     {
-      std::vector<uint16_t> oneHop;
+      //=====================First Check If I Can Send Packets===========================
       std::vector<uint16_t> unitedExclusionRegion;
 
       MacLow::CollectConflictingNodes (unitedExclusionRegion);
+      std::cout<<"united exclusion region size: "<< unitedExclusionRegion.size () << std::endl;
       bool selfMax = false;
-      NodeStatus status = Simulator::GetNodeStatus (m_self.GetNodeId ());
-      uint16_t relativeSlot = m_currentSlot % FRAME_LENGTH;
-      if ( relativeSlot >= status.begin && relativeSlot <= status.end )
+      if ( m_nextSendingSlot == 0)  // have not sent out any packets yet.
       {
-        selfMax = IsSelfMaximum (unitedExclusionRegion);
+        selfMax = IsSelfMaximum (unitedExclusionRegion, m_currentSlot);
       }
-      if ( selfMax == true)
+      if ( selfMax == true || m_nextSendingSlot == m_currentSlot)
+      {
+        // Need next sending slot
+        m_nextSendingSlot = FindNextSendingSlot (unitedExclusionRegion);
+        m_setDequeueCallback ();
         SendDataPacket ();
-
+        return;
+      }
+      //=====================Then Check If I Can Receive Packets=========================
+      if ( ReceiveInCurrentSlot () == true)
+      {
+        Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+        return;
+        // Stay in Data Channel.
+      }
+      //Schedule Control Channel Logic. *************************************************
+       
+      if (!m_phy->IsStateSwitching ())
+      {
+        SetChannelNumber (CONTROL_CHANNEL);
+        Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
+            &MacLow::ScheduleControlSignalTransmission, this);
+        int64_t scheduleDelay = 32302; // Need To Test How Many MicroSeconds It Will Take
+        Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
+      }
     }
-    else
+    else // In Starting Process.
     {
       SendDataPacket ();
     }
+    Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+  }
 
+  void MacLow::SetChannelNumber (uint32_t channelNumber)
+  {
+    m_phy->GetObject<YansWifiPhy> ()->SetChannelNumber (channelNumber);
   }
 
   bool MacLow::IsNeighborSignalMapExisted (uint16_t neighborId)
@@ -2406,6 +2429,7 @@ rxPacket:
         receivers.push_back (it->from); // since its deterministic channel, we can do this
       }  
     }
+    std::cout<<" receivers vector size: "<< receivers.size ()<< std::endl;
     // neighbors of recievers should be considered. not neighbors of the sender
     for (std::vector<uint16_t>::iterator it = receivers.begin (); it != receivers.end (); ++ it)
     {
@@ -2415,16 +2439,21 @@ rxPacket:
         if ( _it->from == m_self.GetNodeId () )
           continue;
         bool conflicting = false;
-        conflicting = Simulator::CheckIfTwoNodesConflict (m_self.GetNodeId (), _it->from);
+        conflicting = CheckIfTwoNodesConflict (m_self.GetNodeId (), _it->from);
         if ( conflicting == true)
-          vec.push_back (_it->from);
+        {
+          if ( find (vec.begin (), vec.end (), _it->from) == vec.end ())
+            vec.push_back (_it->from);
+        }
         // bi-directional exclusion region
-        conflicting = Simulator::CheckIfTwoNodesConflict (_it->from, m_self.GetNodeId ());
+        conflicting = CheckIfTwoNodesConflict (_it->from, m_self.GetNodeId ());
         if ( conflicting == true)
-          vec.push_back (_it->from);
+        {
+          if ( find (vec.begin (), vec.end (), _it->from) == vec.end ())
+            vec.push_back (_it->from);
+        }
       }
     }
-
   }
 
   std::vector<RoadVehicleItem> MacLow::CalculateLengthForDensityShare (std::vector<RoadVehicleItem> vec, 
@@ -2443,5 +2472,151 @@ rxPacket:
       }
     }
     return _vec;
+  }
+
+  void MacLow::GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, std::vector<uint16_t> &vec)
+  {
+    std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (node); // get receiver signal map
+    for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
+    {
+      double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
+      if ( rxPower >= exclusionRegion)
+      {
+        vec.push_back (it->from);
+      }
+    }
+  }
+
+  bool MacLow::CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor)
+  {
+    bool returnValue=false;
+    std::vector<SignalMapItem> senderSignalMap = Simulator::GetSignalMap (sender);
+    std::vector<uint16_t> receivers;
+    //Find out who are the receivers first.
+    for (std::vector<SignalMapItem>::iterator it = senderSignalMap.begin (); it != senderSignalMap.end (); ++ it)
+    {
+      double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
+      if ( rxPower >= LINK_SELECTION_THRESHOLD)
+      {
+        receivers.push_back (it->from);
+      }
+    }
+    //For each receiver, check if @neighbor is in its Exclusion Region
+    for (std::vector<uint16_t>::iterator it = receivers.begin (); it != receivers.end (); ++ it)
+    {
+      std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (*it); // get receiver signal map
+      for (std::vector<SignalMapItem>::iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
+      {
+        if ( _it->from == sender && _it->to == *it)
+        {
+          double exclusionRegion = _it->exclusionRegion; // the link Exclusion region is found.
+          // need a method to fetch nodes in exclusion region. 
+          std::vector<uint16_t> nodesInExclusionRegion;
+          GetNodesInExclusionRegion ( *it, exclusionRegion, nodesInExclusionRegion); // find out who are in Exclusion Region
+          if ( find (nodesInExclusionRegion.begin (), nodesInExclusionRegion.end (), neighbor) != nodesInExclusionRegion.end ())
+          {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  std::vector<uint16_t> MacLow::CollectConflictNeighbors ()
+  {
+    std::vector<uint16_t> vec;
+    std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (m_self.GetNodeId ()); // get receiver signal map
+    for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
+    {
+      if ( CheckIfTwoNodesConflict (it->from, it->to) == true)
+      {
+        vec.push_back (it->from);
+      }
+    }
+    vec.push_back (m_self.GetNodeId ()); // m_self.GetNodeId () == it->to
+    return vec;
+  }
+
+  int64_t MacLow::FindNextSendingSlot (std::vector<uint16_t> exclusionRegion)
+  {
+    int64_t slot = m_currentSlot + 1;
+    while (true)
+    {
+      if (IsSelfMaximum (exclusionRegion, slot) == true)
+      {
+        return slot;
+      }
+      slot += 1;
+    }
+  }
+
+  bool MacLow::ReceiveInCurrentSlot () //Using Signal Map And Nodes Sending Status
+  {
+    //Assuming Symmetric Channel Attenuation For Now.
+    bool returnValue=false;
+    std::vector<SignalMapItem> signalMap= Simulator::GetSignalMap (m_self.GetNodeId ());
+    std::vector<uint16_t> senders;
+    //Find out who are the receivers first.
+    for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
+    {
+      double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
+      if ( rxPower >= LINK_SELECTION_THRESHOLD)
+      {
+        senders.push_back (it->from);
+      }
+    }
+    for (std::vector<uint16_t>::iterator it = senders.begin (); it != senders.end (); ++ it)
+    {
+      for (std::vector<NodeSendingStatus>::iterator _it = m_nodesSendingStatus.begin (); _it != m_nodesSendingStatus.end (); ++ _it)
+      {
+        if ( _it->nodeId == *it)
+        {
+          if (_it->sendingSlot == m_currentSlot)
+          {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  void MacLow::SenseChannelAndSend ()
+  {
+    int64_t maxPropagationDelay = 1000;
+    if ( m_phy->IsStateIdle ())
+    {
+      m_setDequeueCallback ();
+      Simulator::Schedule (NanoSeconds (maxPropagationDelay), &MacLow::SendDataPacket, this);
+    }
+  }
+
+  void MacLow::ScheduleControlSignalTransmission ()
+  {
+    int64_t seed = m_currentSlot * 10000 + m_self.GetNodeId ();
+    srand (seed);
+    int64_t backoffTime = 100000;
+    backoffTime = rand () % backoffTime;
+    Simulator::Schedule (NanoSeconds (abs (backoffTime)), &MacLow::SenseChannelAndSend, this);
+  }
+
+  void MacLow::UpdateSendingStatus (uint16_t node, int64_t slot)
+  {
+    for (std::vector<NodeSendingStatus>::iterator it = m_nodesSendingStatus.begin (); it != m_nodesSendingStatus.end (); ++ it)
+    {
+      if (it->nodeId == node)
+      {
+        it->sendingSlot = slot;
+        break;
+      }
+    }
+    NodeSendingStatus item;
+    item.nodeId = node;
+    item.sendingSlot = slot;
+    m_nodesSendingStatus.push_back (item);
+  }
+
+  void MacLow::SetDequeueCallback (VoidCallback callback)
+  {
+    m_setDequeueCallback = callback;
   }
 } // namespace ns3

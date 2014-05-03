@@ -36,7 +36,7 @@ namespace ns3
       uint16_t sender, uint16_t receiver, double txPower)
   {
 
-    signalMap.PrintSignalMap (receiver);
+    //signalMap.PrintSignalMap (receiver);
     txPower = txPower + TX_GAIN;
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)

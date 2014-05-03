@@ -79,6 +79,7 @@ namespace ns3{
       std::vector<RoadVehicleItem> ComputeVehicleDirectionDistribution ();
       void SetXY (double x, double y);
       void InsertDensityEstimation (uint16_t vehicleId, std::string edgeId, double density);
+      void UpdateExclusionRegion (uint16_t sender, uint16_t receiver, double exclusionRegion);
     private:
       std::vector<SignalMapItem> m_signalMap;
       std::vector<DensityEstimation> m_densityEstimationVector;

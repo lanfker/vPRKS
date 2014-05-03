@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-const uint32_t DEFAULT_PACKET_LENGTH = 1000;
+const uint32_t DEFAULT_PACKET_LENGTH = 500;
 const uint32_t DEFAULT_WIFI_DEVICE_INDEX = 0;
 const double DEFAULT_EXCLUSION_REGION = -90.4397; //dbm
 const double DEFAULT_EXCLUSION_REGION_WATT = 9.0371e-13;//Watt

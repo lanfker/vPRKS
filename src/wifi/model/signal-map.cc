@@ -331,11 +331,23 @@ namespace ns3
         return;
       }
     }
+    DensityEstimation item;
+    item.vehicleId = vehicleId;
+    item.edgeId = edgeId;
+    item.density = density;
+    item.timeStamp = Simulator::Now ();
+    m_densityEstimationVector.push_back (item);
   }
-  DensityEstimation item;
-  item.vehicleId = vehicleId;
-  item.edgeId = edgeId;
-  item.density = density;
-  item.timeStamp = Simulator::Now ();
-  m_densityEstimationVector.push_back (item);
+
+  void SignalMap::UpdateExclusionRegion (uint16_t sender, uint16_t receiver, double exclusionRegion)
+  {
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      if (it->from == sender && it->to == receiver)
+      {
+        it->exclusionRegion = exclusionRegion;
+        break;
+      }
+    }
+  }
 }

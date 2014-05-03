@@ -59,6 +59,15 @@ typedef struct NeighborSignalMap
   SignalMap signalMap;
 } NeighborSignalMap;
 
+#ifndef NODE_SENDING_STATUS
+#define NODE_SENDING_STATUS
+typedef struct NodeSendingStatus
+{
+  uint16_t nodeId;
+  int64_t sendingSlot; // means the next sending slot
+}NodeSendingStatus;
+#endif
+
 /**
  * \ingroup wifi
  * \brief listen to events coming from ns3::MacLow.
@@ -517,7 +526,7 @@ public:
   void RegisterBlockAckListenerForAc (enum AcIndex ac, MacLowBlockAckEventListener *listener);
 
   int64_t GetCurrentSlot ();
-  int64_t CalculatePriority (uint16_t nodeId);
+  int64_t CalculatePriority (uint16_t nodeId, int64_t slot);
   void GetOwnSlotsInFrame (uint16_t &begin, uint16_t &end, DirectionDistribution directions);
   void SetAngle (double angle);
   void SetEdge (std::string edge);
@@ -525,6 +534,7 @@ public:
   void SetStartTxCallback (StartTxCallback callback);
   void SetQueueEmptyCallback (BooleanCallback callback);
   void SetListenerCallback (VoidCallback callback);
+  void SetDequeueCallback (VoidCallback callback);
   void SetDcaTxopPacketCallback (SetPacketCallback callback);
   void CalculateSchedule ();
   bool IsNeighborSignalMapExisted (uint16_t neighborId);
@@ -532,8 +542,17 @@ public:
   void UpdateNeighborSignalMapRecord (SignalMapItem item);
   SignalMap GetSignalMapLocalCopy (uint16_t neighborId);
   void CollectConflictingNodes (std::vector<uint16_t> &vec);
-  bool IsSelfMaximum (std::vector<uint16_t> conflictSet);
+  bool IsSelfMaximum (std::vector<uint16_t> conflictSet, int64_t slot);
   std::vector<RoadVehicleItem> CalculateLengthForDensityShare (std::vector<RoadVehicleItem> vec, uint32_t &count, uint32_t remainingBytes, uint32_t &totalBytes);
+  void GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, std::vector<uint16_t> &vec);
+  bool CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor);
+  std::vector<uint16_t> CollectConflictNeighbors ();
+  int64_t FindNextSendingSlot (std::vector<uint16_t> exclusionRegion);
+  bool ReceiveInCurrentSlot (); //Using Signal Map And Nodes Sending Status
+  void ScheduleControlSignalTransmission ();
+  void SenseChannelAndSend ();
+  void SetChannelNumber (uint32_t channelNumber);
+  void UpdateSendingStatus (uint16_t node, int64_t slot);
 
 private:
   //-----------------------------------VPRKS----------------------
@@ -543,6 +562,7 @@ private:
   Observation m_observation;
   double m_txPower;
   int64_t m_currentSlot;
+  int64_t m_nextSendingSlot;
   double m_angle;
   std::string m_edge;
   double m_positionX;
@@ -551,10 +571,12 @@ private:
   BooleanCallback m_queueEmptyCallback;
   StartTxCallback m_startTxCallback;
   VoidCallback m_setListenerCallback;
+  VoidCallback m_setDequeueCallback;
   SetPacketCallback m_setPacketCallback;
   std::vector<NeighborSignalMap> m_neighborSignalMaps;
   ExclusionRegionHelper m_exclusionRegionHelper;
   MinimumVarianceController m_minimumVarianceController;
+  std::vector<NodeSendingStatus> m_nodesSendingStatus;
 
 
   //----------------------------------End VPRKS-------------------

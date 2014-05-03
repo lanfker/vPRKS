@@ -175,6 +175,7 @@ DcaTxop::SetLow (Ptr<MacLow> low)
   m_low->SetQueueEmptyCallback (MakeCallback (&DcaTxop::QueueEmpty, this));
   m_low->SetListenerCallback (MakeCallback (&DcaTxop::SetMaclowListener, this));
   m_low->SetDcaTxopPacketCallback (MakeCallback (&DcaTxop::SetCurrentPacket, this));
+  m_low->SetDequeueCallback (MakeCallback (&DcaTxop::DequeuePacketAndSetCurrentPacket, this));
 }
 
 void DcaTxop::SetCurrentPacket (WifiMacHeader hdr, Ptr<const Packet> pkt)
@@ -190,6 +191,7 @@ void DcaTxop::SetMaclowListener () const
 
 bool DcaTxop::QueueEmpty()
 {
+  std::cout<<" m_queue: "<< m_queue<< std::endl;
   return m_queue->IsEmpty ();
 }
 
@@ -279,12 +281,17 @@ void
 DcaTxop::StartAccessIfNeeded (void)
 {
   NS_LOG_FUNCTION (this);
-  if (m_currentPacket == 0
-      && !m_queue->IsEmpty ()
-      && !m_dcf->IsAccessRequested ())
+  //In The Learning Process, We Use CSMA.
+  if (Simulator::Now () < Seconds (START_PROCESS_TIME))
+  {
+    if (m_currentPacket == 0
+        && !m_queue->IsEmpty ()
+        && !m_dcf->IsAccessRequested ())
     {
       m_manager->RequestAccess (m_dcf);
     }
+  }
+  //After The Learning Process, We Use TDMA.
 }
 
 
@@ -385,6 +392,48 @@ bool
 DcaTxop::NeedsAccess (void) const
 {
   return !m_queue->IsEmpty () || m_currentPacket != 0;
+}
+
+void DcaTxop::DequeuePacketAndSetCurrentPacket ()
+{
+
+  NS_LOG_FUNCTION (this);
+  if (m_currentPacket == 0)
+    {
+      if (m_queue->IsEmpty ())
+        {
+          NS_LOG_DEBUG ("queue empty");
+          return;
+        }
+      m_currentPacket = m_queue->Dequeue (&m_currentHdr);
+      NS_ASSERT (m_currentPacket != 0);
+      uint16_t sequence = m_txMiddle->GetNextSequenceNumberfor (&m_currentHdr);
+      m_currentHdr.SetSequenceNumber (sequence);
+      m_currentHdr.SetFragmentNumber (0);
+      m_currentHdr.SetNoMoreFragments ();
+      m_currentHdr.SetNoRetry ();
+      m_fragmentNumber = 0;
+      NS_LOG_DEBUG ("dequeued size=" << m_currentPacket->GetSize () <<
+                    ", to=" << m_currentHdr.GetAddr1 () <<
+                    ", seq=" << m_currentHdr.GetSequenceControl ());
+    }
+  MacLowTransmissionParameters params;
+  params.DisableOverrideDurationId ();
+  if (m_currentHdr.GetAddr1 ().IsGroup ())
+    {
+      params.DisableRts ();
+      params.DisableAck ();
+      params.DisableNextData ();
+      Low ()->StartTransmission (m_currentPacket,
+                                 &m_currentHdr,
+                                 params,
+                                 m_transmissionListener);
+      m_currentPacket = 0;
+      m_dcf->ResetCw ();
+      m_dcf->StartBackoffNow (m_rng->GetNext (0, m_dcf->GetCw ()));
+      StartAccessIfNeeded ();
+      NS_LOG_DEBUG ("tx broadcast");
+    }
 }
 void
 DcaTxop::NotifyAccessGranted (void)

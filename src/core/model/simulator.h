@@ -88,11 +88,14 @@ typedef struct NodeSignalMap
   uint16_t nodeId;
   std::vector<SignalMapItem> localSignalMap;
 }NodeSignalMap;
+#ifndef NODE_SENDING_STATUS
+#define NODE_SENDING_STATUS
 typedef struct NodeSendingStatus
 {
   uint16_t nodeId;
   int64_t sendingSlot;
 }NodeSendingStatus;
+#endif
 class Simulator 
 {
 public:
@@ -818,6 +821,7 @@ public:
   static std::vector<NodeSignalMap> m_signalMaps;
   static void UpdateSignalMap (uint16_t nodeId, std::vector<SignalMapItem> localSignalMap);
   static std::vector<SignalMapItem> GetSignalMap (uint16_t nodeId);
+  static void UpdateLinkExclusionRegion (uint16_t sender, uint16_t receiver, double exclusionRegion);
 
   static std::vector<NodeStatus> m_nodeStatusTable;
   static void UpdateNodeStatus (uint16_t nodeId, NodeStatus nodeStatus);

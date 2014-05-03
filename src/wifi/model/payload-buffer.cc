@@ -77,6 +77,71 @@ namespace ns3
     WriteU8 (value & 0xff);
   }
 
+  void PayloadBuffer::WriteU32 (uint16_t value)
+  {
+    WriteU8 ((value >> 0) & 0xff);
+    WriteU8 ((value >> 8) & 0xff);
+    WriteU8 ((value >> 16) & 0xff);
+    WriteU8 ((value >> 24) & 0xff);
+  }
+  void PayloadBuffer::WriteU64 (uint16_t value)
+  {
+    WriteU8 ((value >> 0) & 0xff);
+    WriteU8 ((value >> 8) & 0xff);
+    WriteU8 ((value >> 16) & 0xff);
+    WriteU8 ((value >> 24) & 0xff);
+    WriteU8 ((value >> 32) & 0xff);
+    WriteU8 ((value >> 40) & 0xff);
+    WriteU8 ((value >> 48) & 0xff);
+    WriteU8 ((value >> 56) & 0xff);
+  }
+
+  uint32_t PayloadBuffer::ReadU32()
+  {
+    uint8_t byte0 = ReadU8 ();
+    uint8_t byte1 = ReadU8 ();
+    uint8_t byte2 = ReadU8 ();
+    uint8_t byte3 = ReadU8 ();
+    uint32_t value = byte3;
+    value <<= 8;
+    value |= byte2;
+    value <<= 8;
+    value |= byte1;
+    value <<= 8;
+    value |= byte0;
+
+    return value;
+  }
+
+  uint64_t PayloadBuffer::ReadU64 ()
+  {
+    uint8_t byte0 = ReadU8 ();
+    uint8_t byte1 = ReadU8 ();
+    uint8_t byte2 = ReadU8 ();
+    uint8_t byte3 = ReadU8 ();
+    uint8_t byte4 = ReadU8 ();
+    uint8_t byte5 = ReadU8 ();
+    uint8_t byte6 = ReadU8 ();
+    uint8_t byte7 = ReadU8 ();
+    uint64_t value = byte7;
+    value <<= 8;
+    value |= byte6;
+    value <<= 8;
+    value |= byte5;
+    value <<= 8;
+    value |= byte4;
+    value <<= 8;
+    value |= byte3;
+    value <<= 8;
+    value |= byte2;
+    value <<= 8;
+    value |= byte1;
+    value <<= 8;
+    value |= byte0;
+
+    return value;
+  }
+
   void PayloadBuffer::WriteDouble (double value)
   {
     uint8_t* buff = (uint8_t *)& value;
