@@ -1554,7 +1554,7 @@ rxPacket:
     {
       if ( Simulator::Now () >= Seconds (START_PROCESS_TIME))
       {
-        std::cout<<"m_currentPacket: "<< m_currentPacket <<" hdr: "<< &m_currentHdr<< std::endl;
+        std::cout<<m_self.GetNodeId ()<<" m_currentPacket: "<< m_currentPacket <<" hdr: "<< &m_currentHdr<< std::endl;
       }
       WifiMode dataTxMode = GetDataTxMode (m_currentPacket, &m_currentHdr);
       Time txDuration = m_phy->CalculateTxDuration (GetSize (m_currentPacket, &m_currentHdr), dataTxMode, WIFI_PREAMBLE_LONG);
@@ -1609,6 +1609,7 @@ rxPacket:
     MacLow::SendDataPacket (void)
     {
       NS_LOG_FUNCTION (this);
+      std::cout<<m_self.GetNodeId ()<< " is sending "<< Simulator::Now ()<< std::endl;
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
 
@@ -2310,50 +2311,44 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
-    std::cout<<" in calculate schedule in mac-low.cc"<< std::endl;
+    //std::cout<<" in calculate schedule in mac-low.cc"<< std::endl;
+    //=====================First Check If I Can Send Packets===========================
+    std::vector<uint16_t> unitedExclusionRegion;
 
-    //DATA CHANNEL 1
-    if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
+    MacLow::CollectConflictingNodes (unitedExclusionRegion);
+    //std::cout<<"united exclusion region size: "<< unitedExclusionRegion.size () << std::endl;
+    bool selfMax = false;
+    if ( m_nextSendingSlot == 0)  // have not sent out any packets yet.
     {
-      //=====================First Check If I Can Send Packets===========================
-      std::vector<uint16_t> unitedExclusionRegion;
-
-      MacLow::CollectConflictingNodes (unitedExclusionRegion);
-      std::cout<<"united exclusion region size: "<< unitedExclusionRegion.size () << std::endl;
-      bool selfMax = false;
-      if ( m_nextSendingSlot == 0)  // have not sent out any packets yet.
+      selfMax = IsSelfMaximum (unitedExclusionRegion, m_currentSlot);
+    }
+    if ( selfMax == true || m_nextSendingSlot == m_currentSlot)
+    {
+      // Need next sending slot
+      m_nextSendingSlot = FindNextSendingSlot (unitedExclusionRegion);
+      if ( m_queueEmptyCallback () != true)
       {
-        selfMax = IsSelfMaximum (unitedExclusionRegion, m_currentSlot);
-      }
-      if ( selfMax == true || m_nextSendingSlot == m_currentSlot)
-      {
-        // Need next sending slot
-        m_nextSendingSlot = FindNextSendingSlot (unitedExclusionRegion);
         m_setDequeueCallback ();
         SendDataPacket ();
-        return;
       }
-      //=====================Then Check If I Can Receive Packets=========================
-      if ( ReceiveInCurrentSlot () == true)
-      {
-        //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
-        return;
-        // Stay in Data Channel.
-      }
-      //Schedule Control Channel Logic. *************************************************
-       
-      if (!m_phy->IsStateSwitching ())
-      {
-        SetChannelNumber (CONTROL_CHANNEL);
-        Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
-            &MacLow::ScheduleControlSignalTransmission, this);
-        int64_t scheduleDelay = 32302; // Need To Test How Many MicroSeconds It Will Take
-        Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
-      }
+      return;
     }
-    else // In Starting Process.
+    //=====================Then Check If I Can Receive Packets=========================
+    if ( ReceiveInCurrentSlot () == true)
     {
-      SendDataPacket ();
+      //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+      return;
+      // Stay in Data Channel.
+    }
+    //Schedule Control Channel Logic. *************************************************
+
+    if (!m_phy->IsStateSwitching () && m_queueEmptyCallback () == false)
+    {
+      SetChannelNumber (CONTROL_CHANNEL);
+      Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
+          &MacLow::ScheduleControlSignalTransmission, this);
+      int64_t scheduleDelay = 32302; // Need To Test How Many MicroSeconds It Will Take
+      Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
     }
     //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
   }
@@ -2423,7 +2418,7 @@ rxPacket:
         receivers.push_back (it->from); // since its deterministic channel, we can do this
       }  
     }
-    std::cout<<" receivers vector size: "<< receivers.size ()<< std::endl;
+    //std::cout<<" receivers vector size: "<< receivers.size ()<< std::endl;
     // neighbors of recievers should be considered. not neighbors of the sender
     for (std::vector<uint16_t>::iterator it = receivers.begin (); it != receivers.end (); ++ it)
     {

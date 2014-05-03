@@ -135,7 +135,17 @@ DcaTxop::DcaTxop ()
   m_queue = CreateObject<WifiMacQueue> ();
   m_rng = new RealRandomStream ();
   m_txMiddle = new MacTxMiddle ();
-  m_scheduleCalculateEvent = Simulator::Schedule (Seconds (START_PROCESS_TIME), &DcaTxop::CalculateSchedule, this);
+  if ( Simulator::Now () < Seconds ( START_PROCESS_TIME))
+  {
+    Time delay = Seconds (START_PROCESS_TIME) - Simulator::Now ();
+    m_scheduleCalculateEvent = Simulator::Schedule (delay, &DcaTxop::CalculateSchedule, this);
+  }
+  else
+  {
+    Time nextSlotTime = MicroSeconds (m_low->GetCurrentSlot () + 1);
+    Time delay = nextSlotTime - Simulator::Now ();
+    m_scheduleCalculateEvent = Simulator::Schedule (delay, &DcaTxop::CalculateSchedule, this);
+  }
 }
 
 DcaTxop::~DcaTxop ()
@@ -147,7 +157,7 @@ void
 DcaTxop::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
-  m_scheduleCalculateEvent.Cancel ();
+  std::cout<<m_low->GetAddress () <<" " << Simulator::Now () << " do dispose "<< std::endl;
   m_queue = 0;
   m_low = 0;
   m_stationManager = 0;
@@ -159,6 +169,7 @@ DcaTxop::DoDispose (void)
   m_dcf = 0;
   m_rng = 0;
   m_txMiddle = 0;
+  m_scheduleCalculateEvent.Cancel ();
 }
 
 void DcaTxop::CalculateSchedule ()
@@ -169,10 +180,7 @@ void DcaTxop::CalculateSchedule ()
   }
   else 
   {
-    if ( QueueEmpty () == false)
-    {
-      m_low->CalculateSchedule ();
-    }
+    m_low->CalculateSchedule ();
     m_scheduleCalculateEvent =  Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &DcaTxop::CalculateSchedule, this);
   }
 }
@@ -210,7 +218,7 @@ void DcaTxop::SetMaclowListener () const
 
 bool DcaTxop::QueueEmpty()
 {
-  //std::cout<<" m_queue: "<< m_queue<< std::endl;
+  //std::cout<<" m_address: "<< m_low->GetAddress ()<< std::endl;
   return m_queue->IsEmpty ();
 }
 
@@ -282,7 +290,10 @@ DcaTxop::Queue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
                                      packet, fullPacketSize);
   m_queue->Enqueue (packet, hdr);
   //std::cout<<" just enqueue a packet, the method returns: "<< QueueEmpty () << std::endl;
-  StartAccessIfNeeded ();
+  //In The Learning Process, We Use CSMA.
+  if (Simulator::Now () < Seconds (START_PROCESS_TIME))
+    StartAccessIfNeeded ();
+  //After The Learning Process, We Use TDMA.
 }
 
 void
@@ -301,17 +312,12 @@ void
 DcaTxop::StartAccessIfNeeded (void)
 {
   NS_LOG_FUNCTION (this);
-  //In The Learning Process, We Use CSMA.
-  if (Simulator::Now () < Seconds (START_PROCESS_TIME))
+  if (m_currentPacket == 0
+      && !m_queue->IsEmpty ()
+      && !m_dcf->IsAccessRequested ())
   {
-    if (m_currentPacket == 0
-        && !m_queue->IsEmpty ()
-        && !m_dcf->IsAccessRequested ())
-    {
-      m_manager->RequestAccess (m_dcf);
-    }
+    m_manager->RequestAccess (m_dcf);
   }
-  //After The Learning Process, We Use TDMA.
 }
 
 
@@ -561,8 +567,8 @@ DcaTxop::NotifyCollision (void)
 void
 DcaTxop::NotifyChannelSwitching (void)
 {
-  m_queue->Flush ();
-  m_currentPacket = 0;
+  //m_queue->Flush ();
+  //m_currentPacket = 0;
 }
 
 void
