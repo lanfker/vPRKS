@@ -135,17 +135,6 @@ DcaTxop::DcaTxop ()
   m_queue = CreateObject<WifiMacQueue> ();
   m_rng = new RealRandomStream ();
   m_txMiddle = new MacTxMiddle ();
-  if ( Simulator::Now () < Seconds ( START_PROCESS_TIME))
-  {
-    Time delay = Seconds (START_PROCESS_TIME) - Simulator::Now ();
-    m_scheduleCalculateEvent = Simulator::Schedule (delay, &DcaTxop::CalculateSchedule, this);
-  }
-  else
-  {
-    Time nextSlotTime = MicroSeconds (m_low->GetCurrentSlot () + 1);
-    Time delay = nextSlotTime - Simulator::Now ();
-    m_scheduleCalculateEvent = Simulator::Schedule (delay, &DcaTxop::CalculateSchedule, this);
-  }
 }
 
 DcaTxop::~DcaTxop ()
@@ -203,6 +192,18 @@ DcaTxop::SetLow (Ptr<MacLow> low)
   m_low->SetListenerCallback (MakeCallback (&DcaTxop::SetMaclowListener, this));
   m_low->SetDcaTxopPacketCallback (MakeCallback (&DcaTxop::SetCurrentPacket, this));
   m_low->SetDequeueCallback (MakeCallback (&DcaTxop::DequeuePacketAndSetCurrentPacket, this));
+
+  if ( Simulator::Now () < Seconds ( START_PROCESS_TIME))
+  {
+    Time delay = Seconds (START_PROCESS_TIME) - Simulator::Now ();
+    m_scheduleCalculateEvent = Simulator::Schedule (delay, &DcaTxop::CalculateSchedule, this);
+  }
+  else
+  {
+    Time nextSlotTime = MicroSeconds ((m_low->GetCurrentSlot () + 1) * SLOT_LENGTH);
+    Time delay = nextSlotTime - Simulator::Now ();
+    m_scheduleCalculateEvent = Simulator::Schedule (delay, &DcaTxop::CalculateSchedule, this);
+  }
 }
 
 void DcaTxop::SetCurrentPacket (WifiMacHeader hdr, Ptr<const Packet> pkt)
@@ -455,9 +456,11 @@ void DcaTxop::DequeuePacketAndSetCurrentPacket ()
                                  params,
                                  m_transmissionListener);
       m_currentPacket = 0;
+      /*
       m_dcf->ResetCw ();
       m_dcf->StartBackoffNow (m_rng->GetNext (0, m_dcf->GetCw ()));
       StartAccessIfNeeded ();
+      */
       NS_LOG_DEBUG ("tx broadcast");
     }
 }

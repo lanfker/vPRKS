@@ -26,7 +26,7 @@ const double DELIVERY_100_SNR = 14; //dB
 
 const uint32_t MAX_RANDOM_SEED = 100;
 const uint32_t MAX_RUN_NUMBER = 200;
-const int64_t SLOT_LENGTH = 500; //in terms of micro seconds
+const int64_t SLOT_LENGTH = 1500; //in terms of micro seconds
 const uint32_t FRAME_LENGTH = 100; //slot
 
 const uint16_t _FROM = 2;

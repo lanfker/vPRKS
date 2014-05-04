@@ -25,8 +25,8 @@ namespace ns3{
 
       void WriteU8 (uint8_t value);
       void WriteU16 (uint16_t value);
-      void WriteU32 (uint16_t value);
-      void WriteU64 (uint16_t value);
+      void WriteU32 (uint32_t value);
+      void WriteU64 (uint64_t value);
       void WriteDouble (double value);
       uint32_t WriteString (std::string str);
       std::string ReadString (uint32_t length);

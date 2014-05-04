@@ -508,6 +508,13 @@ namespace ns3 {
     return status;
   }
 
+  double Simulator::GetDistanceBetweenTwoNodes (uint16_t n1, uint16_t n2)
+  {
+    NodeStatus s1 = GetNodeStatus (n1);
+    NodeStatus s2 = GetNodeStatus (n2);
+    return sqrt ( pow (s1.x - s2.x, 2) + pow (s1.y - s2.y,2));
+  }
+
   void Simulator::PrintNodeStatus (uint16_t nodeId)
   {
     std::cout<<"print node status for node: "<< nodeId << std::endl;

@@ -553,6 +553,7 @@ public:
   void SenseChannelAndSend ();
   void SetChannelNumber (uint32_t channelNumber);
   void UpdateSendingStatus (uint16_t node, int64_t slot);
+  void GenerateControlPacket ();
 
 private:
   //-----------------------------------VPRKS----------------------

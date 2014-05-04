@@ -389,7 +389,7 @@ namespace ns3
     phy.Set ("TxPowerStart",  DoubleValue(DEFAULT_POWER));
     phy.Set ("TxPowerEnd",  DoubleValue(DEFAULT_POWER + 1));
     phy.Set ("TxPowerLevels", UintegerValue (2));
-    phy.Set ("ChannelNumber", UintegerValue (DATA_CHANNEL));
+    phy.Set ("ChannelNumber", UintegerValue (CONTROL_CHANNEL));
     phy.SetChannel(channel);
 
   }

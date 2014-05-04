@@ -410,19 +410,21 @@ switchChannel:
       //std::cout<<" m_edThreshold: "<< WToDbm (m_edThresholdW) << std::endl; // -96 dBm
       rxPowerDbm += m_rxGainDb;
 
+
       //-------Add rxPower in payload
       WifiMacHeader _hdr;
       WifiMacTrailer _fcs;
       packet->RemoveHeader (_hdr);
       packet->RemoveTrailer (_fcs);
+      uint8_t payload[DEFAULT_PACKET_LENGTH];
+      packet->CopyData (payload, DEFAULT_PACKET_LENGTH);
       uint32_t sequenceNumber = _hdr.GetSequenceNumber ();
       //std::cout<<"sequence number: "<< sequenceNumber << std::endl;
       //rxPowerDbm = -98 + (sequenceNumber - 30 )* 0.01;
 
-      uint8_t payload[DEFAULT_PACKET_LENGTH];
-      packet->CopyData (payload, DEFAULT_PACKET_LENGTH);
       PayloadBuffer buf = PayloadBuffer (payload);
       uint8_t txPower = (uint8_t) buf.ReadDouble (); //txpower level
+      //std::cout<<" decoded txpower: "<< txPower << std::endl;
       buf.ReSetPointer ();
       buf.WriteDouble (GetPowerDbm (txPower) + m_txGainDb);
       buf.WriteDouble (rxPowerDbm);
@@ -546,6 +548,7 @@ maybeCcaBusy:
        *  - we are idle
        */
       
+      //std::cout<<" tx: "<< m_state->IsStateTx ()  <<" swithcing: "<< m_state->IsStateSwitching () << std::endl;
       NS_ASSERT (!m_state->IsStateTx () && !m_state->IsStateSwitching ());
 
       Time txDuration = CalculateTxDuration (packet->GetSize (), txMode, preamble);
@@ -561,6 +564,7 @@ maybeCcaBusy:
       m_state->SwitchToTx (txDuration, packet, txMode, preamble, txPower);
       m_channel->Send (this, packet, GetPowerDbm (txPower) + m_txGainDb, txMode, preamble);
       //std::cout<<" txPower: "<< (uint32_t)txPower <<" actualPower: "<< GetPowerDbm (txPower) + m_txGainDb << std::endl;
+
     }
 
   uint32_t

@@ -143,6 +143,7 @@ public:
   virtual void ConfigureStandard (enum WifiPhyStandard standard);
   Time GetSwitchingDelay ();
 
+  double GetPowerDbm (uint8_t power) const;
 private:
   YansWifiPhy (const YansWifiPhy &o);
   virtual void DoDispose (void);
@@ -159,7 +160,6 @@ private:
   double DbToRatio (double db) const;
   double WToDbm (double w) const;
   double RatioToDb (double ratio) const;
-  double GetPowerDbm (uint8_t power) const;
   void EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> event);
 
 private:

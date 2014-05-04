@@ -709,12 +709,11 @@ namespace ns3 {
       uint16_t receiver = m_self.GetNodeId ();
       Ptr<MobilityModel> selfMobilityModel = m_phy->GetObject<YansWifiPhy> () -> GetMobility () -> GetObject <MobilityModel> ();
       Vector position = selfMobilityModel -> GetPosition ();
-      //std::cout<<" position.x: "<< position.x <<" position.y: "<< position.y<< std::endl;
       //-----------------------------------------------------
       uint8_t* temp = new uint8_t[DEFAULT_PACKET_LENGTH];
       uint32_t copyBytes = packet->CopyData (temp, DEFAULT_PACKET_LENGTH);
-      //std::cout<<"copied bytes: "<< copyBytes << std::endl;
       PayloadBuffer buff = PayloadBuffer (temp);
+      //For TxPower, The Actual Dbm Value Is Updated At The Physical Layer.
       double txPower = buff.ReadDouble (); // with txGain added
       double rxPower = buff.ReadDouble (); // with rxGain added
       double angle = buff.ReadDouble ();
@@ -725,10 +724,20 @@ namespace ns3 {
       std::string edge = buff.ReadString (edgeLength);
       m_signalMap.UpdateVehicleStatus (sender, angle, x, y, edge);
       int64_t receivedNextSendingSlot = buff.ReadU64 ();
+      //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" edge: "<< edge << std::endl;
 
       UpdateSendingStatus (hdr.GetAddr2().GetNodeId (), receivedNextSendingSlot);
-      if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
-        std::cout<<m_self.GetNodeId ()<<" received nextsendingslot: "<< receivedNextSendingSlot <<" from: "<< hdr.GetAddr2 ().GetNodeId () << std::endl;
+      /*
+      if ( Simulator::Now () > Seconds (START_PROCESS_TIME ) && (m_phy->GetChannelNumber () == DATA_CHANNEL ))
+      {
+        std::cout<<m_self.GetNodeId () << " is receiving" << std::endl;
+      }
+      else if ( Simulator::Now () > Seconds (START_PROCESS_TIME ) && (m_phy->GetChannelNumber () == CONTROL_CHANNEL))
+      {
+        std::cout<<m_self.GetNodeId () << " in control channel, receiving with rxPower: "<< rxPower<< " txPower: "<< txPower << std::endl;
+      }
+      */
+
 
       //============================Read shared Density info==============================
       /*
@@ -1416,7 +1425,27 @@ rxPacket:
           txPower = txPower - DEFAULT_POWER;
           //std::cout<<" txPowerLevel: "<< txPower << std::endl;
           //txPower = 0; // to test double regression
-          m_phy->SendPacket (packet, txMode, WIFI_PREAMBLE_LONG, (uint8_t) txPower);
+          //double powerDbm = m_phy->GetPowerDbm (txPower);
+
+          //=============================Control Channel Power Level Update. 
+          //This Is Due To Power Control, And Is Used For Signal Map Update.
+          
+          Ptr<Packet> pkt = packet->Copy ();
+          WifiMacHeader _hdr;
+          WifiMacTrailer _fcs;
+          pkt->RemoveHeader (_hdr);
+          pkt->RemoveTrailer (_fcs);
+          uint8_t payload[DEFAULT_PACKET_LENGTH];
+          pkt->CopyData (payload, DEFAULT_PACKET_LENGTH);
+          PayloadBuffer buff = PayloadBuffer (payload);
+          //uint8_t txPowerLevel = 0;//default tx Power level
+          buff.WriteDouble (m_phy->GetObject<YansWifiPhy> ()->GetPowerDbm (txPower) + TX_GAIN);
+
+          pkt = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
+          pkt->AddHeader (_hdr);
+          pkt->AddTrailer (_fcs);
+
+          m_phy->SendPacket (pkt, txMode, WIFI_PREAMBLE_LONG, (uint8_t) txPower);
           //======================== POWER control for control signal =================
         }
         else
@@ -1554,7 +1583,7 @@ rxPacket:
     {
       if ( Simulator::Now () >= Seconds (START_PROCESS_TIME))
       {
-        std::cout<<m_self.GetNodeId ()<<" m_currentPacket: "<< m_currentPacket <<" hdr: "<< &m_currentHdr<< std::endl;
+        //std::cout<<m_self.GetNodeId ()<<" m_currentPacket: "<< m_currentPacket <<" hdr: "<< &m_currentHdr<< std::endl;
       }
       WifiMode dataTxMode = GetDataTxMode (m_currentPacket, &m_currentHdr);
       Time txDuration = m_phy->CalculateTxDuration (GetSize (m_currentPacket, &m_currentHdr), dataTxMode, WIFI_PREAMBLE_LONG);
@@ -1609,7 +1638,7 @@ rxPacket:
     MacLow::SendDataPacket (void)
     {
       NS_LOG_FUNCTION (this);
-      std::cout<<m_self.GetNodeId ()<< " is sending "<< Simulator::Now ()<< std::endl;
+      //std::cout<<m_self.GetNodeId ()<< " is sending "<< Simulator::Now ()<< std::endl;
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
 
@@ -1660,14 +1689,13 @@ rxPacket:
       m_currentPacket->CopyData (payload, DEFAULT_PACKET_LENGTH);
       PayloadBuffer buff = PayloadBuffer (payload);
       uint8_t txPowerLevel = 0;//default tx Power level
-      buff.WriteDouble ((double)txPowerLevel);
+      buff.WriteDouble (m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (txPowerLevel) + TX_GAIN);
 
       buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
       buff.WriteU8 ((uint8_t)m_edge.size ());
       buff.WriteString (m_edge);
-      if ( Simulator::Now () >= Seconds (START_PROCESS_TIME) )
-        std::cout<<m_self.GetNodeId () << " next sending slot: "<< m_nextSendingSlot << std::endl;
 
+      //std::cout<<m_self.GetNodeId () <<" send: sending slot: "<< m_nextSendingSlot << std::endl;
       buff.WriteU64 (m_nextSendingSlot);
 
       //=========================Vehicle Density distribution
@@ -2294,6 +2322,7 @@ rxPacket:
       if ( temp > maxPriority)
         maxPriority = temp;
     }
+    //std::cout<<" selfpriority: "<< selfPriority <<" maxpriority: "<< maxPriority<<" m_currentSlot: "<< m_currentSlot << std::endl;
     if (maxPriority == selfPriority)
       return true;
     else
@@ -2311,46 +2340,46 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
-    //std::cout<<" in calculate schedule in mac-low.cc"<< std::endl;
     //=====================First Check If I Can Send Packets===========================
     std::vector<uint16_t> unitedExclusionRegion;
 
     MacLow::CollectConflictingNodes (unitedExclusionRegion);
-    //std::cout<<"united exclusion region size: "<< unitedExclusionRegion.size () << std::endl;
     bool selfMax = false;
-    if ( m_nextSendingSlot == 0)  // have not sent out any packets yet.
+    if ( m_nextSendingSlot == 0 || m_nextSendingSlot < GetCurrentSlot ())  // have not sent out any packets yet.
     {
-      selfMax = IsSelfMaximum (unitedExclusionRegion, m_currentSlot);
+      selfMax = IsSelfMaximum (unitedExclusionRegion, GetCurrentSlot ());
     }
-    if ( selfMax == true || m_nextSendingSlot == m_currentSlot)
+    if ( selfMax == true || m_nextSendingSlot == GetCurrentSlot ())
     {
       // Need next sending slot
       m_nextSendingSlot = FindNextSendingSlot (unitedExclusionRegion);
-      if ( m_queueEmptyCallback () != true)
+      //std::cout<<" trying to send. queueempty: "<< m_queueEmptyCallback () <<" stateidle: "<< m_phy->IsStateIdle () << std::endl;
+      if ( m_queueEmptyCallback () != true && m_phy->IsStateIdle ())
       {
         m_setDequeueCallback ();
         SendDataPacket ();
+        std::cout<<m_self.GetNodeId () << " is sending packet according to schedule "<< Simulator::Now () << std::endl;
       }
       return;
     }
     //=====================Then Check If I Can Receive Packets=========================
     if ( ReceiveInCurrentSlot () == true)
     {
-      //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
+      //std::cout<<m_self.GetNodeId () << " will be a receiver in the current slot" << std::endl;
       return;
       // Stay in Data Channel.
     }
     //Schedule Control Channel Logic. *************************************************
 
-    if (!m_phy->IsStateSwitching () && m_queueEmptyCallback () == false)
+    if (m_phy->IsStateIdle ())
     {
+      //std::cout<<m_self.GetNodeId () <<" will schedule control packet in control channel "<<Simulator::Now ()<< std::endl;
       SetChannelNumber (CONTROL_CHANNEL);
       Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
           &MacLow::ScheduleControlSignalTransmission, this);
-      int64_t scheduleDelay = 32302; // Need To Test How Many MicroSeconds It Will Take
+      int64_t scheduleDelay = 1200; // Need To Test How Many MicroSeconds It Will Take
       Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
     }
-    //Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::CalculateSchedule, this);
   }
 
   void MacLow::SetChannelNumber (uint32_t channelNumber)
@@ -2528,7 +2557,7 @@ rxPacket:
 
   int64_t MacLow::FindNextSendingSlot (std::vector<uint16_t> exclusionRegion)
   {
-    int64_t slot = m_currentSlot + 1;
+    int64_t slot = GetCurrentSlot () + 1;
     while (true)
     {
       if (IsSelfMaximum (exclusionRegion, slot) == true)
@@ -2560,7 +2589,8 @@ rxPacket:
       {
         if ( _it->nodeId == *it)
         {
-          if (_it->sendingSlot == m_currentSlot)
+          //std::cout<<" sending slot: "<< _it->sendingSlot <<" current: "<< GetCurrentSlot ()<< std::endl;
+          if (_it->sendingSlot == GetCurrentSlot ())
           {
             return true;
           }
@@ -2574,14 +2604,14 @@ rxPacket:
     int64_t maxPropagationDelay = 1000;
     if ( m_phy->IsStateIdle ())
     {
-      m_setDequeueCallback ();
+      GenerateControlPacket ();
       Simulator::Schedule (NanoSeconds (maxPropagationDelay), &MacLow::SendDataPacket, this);
     }
   }
 
   void MacLow::ScheduleControlSignalTransmission ()
   {
-    int64_t seed = m_currentSlot * 10000 + m_self.GetNodeId ();
+    int64_t seed =GetCurrentSlot ()  * 10000 + m_self.GetNodeId ();
     srand (seed);
     int64_t backoffTime = 100000;
     backoffTime = rand () % backoffTime;
@@ -2607,5 +2637,41 @@ rxPacket:
   void MacLow::SetDequeueCallback (VoidCallback callback)
   {
     m_setDequeueCallback = callback;
+  }
+
+  void MacLow::GenerateControlPacket ()
+  {
+    uint8_t * payload = new uint8_t[DEFAULT_PACKET_LENGTH];
+    PayloadBuffer buff = PayloadBuffer (payload);
+    double txPower = 0;
+    double rxPower = 0;
+    buff.WriteDouble (txPower); // will fill in exact value at PHY layer before transmission
+    buff.WriteDouble (rxPower); // will fill in axact value at PHY layer after reception
+    buff.WriteDouble (m_angle);
+    buff.WriteDouble (m_positionX);
+    buff.WriteDouble (m_positionY);
+    Ptr<Packet> pkt = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
+    m_setListenerCallback ();
+
+    WifiMacHeader hdr;
+    hdr.SetAddr2 (m_self);
+    hdr.SetAddr1 (Mac48Address::GetBroadcast ());
+    hdr.SetDsNotTo ();
+    hdr.SetDsNotFrom ();
+    hdr.SetFragmentNumber (0);
+    hdr.SetNoRetry ();
+    hdr.SetTypeData ();
+    MacLowTransmissionParameters params;
+    params.DisableAck ();
+    params.DisableRts ();
+    params.DisableOverrideDurationId ();
+    params.DisableNextData ();
+    m_currentPacket = pkt;
+    m_currentHdr = hdr;
+    m_setPacketCallback (hdr, pkt);
+    m_txParams = params;
+
+    //mac->Enqueue (pkt, addr1);
+    delete [] payload;
   }
 } // namespace ns3

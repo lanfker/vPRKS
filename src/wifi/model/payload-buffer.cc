@@ -77,14 +77,14 @@ namespace ns3
     WriteU8 (value & 0xff);
   }
 
-  void PayloadBuffer::WriteU32 (uint16_t value)
+  void PayloadBuffer::WriteU32 (uint32_t value)
   {
     WriteU8 ((value >> 0) & 0xff);
     WriteU8 ((value >> 8) & 0xff);
     WriteU8 ((value >> 16) & 0xff);
     WriteU8 ((value >> 24) & 0xff);
   }
-  void PayloadBuffer::WriteU64 (uint16_t value)
+  void PayloadBuffer::WriteU64 (uint64_t value)
   {
     WriteU8 ((value >> 0) & 0xff);
     WriteU8 ((value >> 8) & 0xff);
