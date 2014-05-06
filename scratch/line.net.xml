@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on Mon May  5 15:37:10 2014 by SUMO netconvert Version 0.18.0
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.sf.net/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <node-files value="line.nod.xml"/>
+        <edge-files value="line.edg.xml"/>
+    </input>
+
+    <output>
+        <output-file value="line.net.xml"/>
+    </output>
+
+</configuration>
+-->
+
+<net version="0.13" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.sf.net/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,0.00,10000.00,0.00" origBoundary="0.00,0.00,10000.00,0.00" projParameter="!"/>
+
+    <edge id="1" from="0" to="1" priority="46">
+        <lane id="1_0" index="0" speed="45.00" length="10000.00" shape="0.00,-1.65 10000.00,-1.65"/>
+    </edge>
+
+    <junction id="0" type="unregulated" x="0.00" y="0.00" incLanes="" intLanes="" shape="-0.00,-0.05 -0.00,-3.25"/>
+    <junction id="1" type="unregulated" x="10000.00" y="0.00" incLanes="1_0" intLanes="" shape="10000.00,-3.25 10000.00,-0.05"/>
+
+</net>

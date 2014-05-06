@@ -34,6 +34,8 @@ namespace ns3
    */
   void LinkEstimator::AddSequenceNumber (uint32_t seq, uint16_t sender, uint16_t receiver, Time timeStamp)
   {
+    //std::cout<<" m_estimations.size (): "<< m_estimations.size () << std::endl;
+    //std::cout<<" seq: "<< seq <<" seq % 4096: "<< seq % 4096 << std::endl;
     seq = seq % 4096;
     for (std::vector<LinkEstimationItem>::iterator it = m_estimations.begin (); it != m_estimations.end (); ++ it)
     {
@@ -112,15 +114,15 @@ namespace ns3
         sort (it->receivedSequenceNumbers.begin (), it->receivedSequenceNumbers.end ());
         _first = it->receivedSequenceNumbers[0];
         _last = it->receivedSequenceNumbers[it->receivedSequenceNumbers.size () - 1];
+        /*
+        if ( sender == 6 && receiver == 5)
+        {
+          PrintSeqNumbers (it->receivedSequenceNumbers);
+          std::cout<<"_last: "<< _last <<" _first: "<< _first << std::endl;
+        }
+        */
         if (_last - _first + 1 >= window)
         {
-          /*
-          if ( sender == 15)
-          {
-            PrintSeqNumbers (it->receivedSequenceNumbers);
-            std::cout<<"_last: "<< _last <<" _first: "<< _first << std::endl;
-          }
-          */
           it->instantPdr = (double)(it->receivedSequenceNumbers.size ()) / (_last - _first + 1);
           it->ewmaPdr = (1-m_coefficient) * it->ewmaPdr + m_coefficient * it->instantPdr;
           /*

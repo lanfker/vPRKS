@@ -223,6 +223,9 @@ namespace ns3
      */
     std::string sumoConfig;
 
+    std::string nodeFile;
+    std::string edgeFile;
+
     /**
      * The host machine on which SUMO will run
      */

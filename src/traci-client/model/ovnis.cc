@@ -68,6 +68,10 @@ namespace ns3
           StringValue("ns3::Application"), MakeStringAccessor(&Ovnis::m_application), MakeStringChecker())
       .AddAttribute("SumoConfig","The configuration file for running SUMO",
           StringValue(SUMO_CONFIG), MakeStringAccessor(&Ovnis::sumoConfig), MakeStringChecker())
+      .AddAttribute("NodeFile","The configuration file for *.nod.xml",
+          StringValue("cross.nod.xml"), MakeStringAccessor(&Ovnis::nodeFile), MakeStringChecker())
+      .AddAttribute("EdgeFile","The configuration file for *.edg.xml",
+          StringValue("cross.edg.xml"), MakeStringAccessor(&Ovnis::edgeFile), MakeStringChecker())
       .AddAttribute("SumoHost", "The host machine on which SUMO will run",
           StringValue(SUMO_HOST), MakeStringAccessor(&Ovnis::sumoHost), MakeStringChecker())
       .AddAttribute("StartTime", "Start time in the simulation scale (in seconds)",
@@ -151,8 +155,8 @@ namespace ns3
     }
 
     //------------------------------------------------------------------------------------------------
-    NodeXmlParser::ParseNodeXmlFile ("scratch/cross.nod.xml");
-    EdgeXmlParser::ParseEdgeXmlFile ("scratch/cross.edg.xml");
+    NodeXmlParser::ParseNodeXmlFile (nodeFile);
+    EdgeXmlParser::ParseEdgeXmlFile (edgeFile);
 
 
     //------------------------------------------------------------------------------------------------
@@ -378,7 +382,7 @@ namespace ns3
     channel = CreateObject<YansWifiChannel> ();
  
     factory1.SetTypeId("ns3::LogDistancePropagationLossModel");
-    factory1.Set("Exponent", DoubleValue (1.5));
+    factory1.Set("Exponent", DoubleValue (PATH_LOSS_EXPONENT));
     channel->SetPropagationLossModel(factory1.Create<PropagationLossModel> ());
 
 #endif

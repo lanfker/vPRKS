@@ -423,10 +423,10 @@ switchChannel:
       //rxPowerDbm = -98 + (sequenceNumber - 30 )* 0.01;
 
       PayloadBuffer buf = PayloadBuffer (payload);
-      uint8_t txPower = (uint8_t) buf.ReadDouble (); //txpower level
+      double txPower =buf.ReadDouble (); //txpower level
       //std::cout<<" decoded txpower: "<< txPower << std::endl;
-      buf.ReSetPointer ();
-      buf.WriteDouble (GetPowerDbm (txPower) + m_txGainDb);
+      //buf.ReSetPointer ();
+      //buf.WriteDouble (GetPowerDbm (txPower) + m_txGainDb);
       buf.WriteDouble (rxPowerDbm);
       /*
       buf.ReSetPointer ();

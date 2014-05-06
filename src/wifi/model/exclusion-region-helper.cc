@@ -36,6 +36,7 @@ namespace ns3
       uint16_t sender, uint16_t receiver, double txPower)
   {
 
+    //std::cout<<" m_exclusionRegionCollection.size (): "<< m_exclusionRegionCollection.size ()<< std::endl;
     //signalMap.PrintSignalMap (receiver);
     txPower = txPower + TX_GAIN;
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
@@ -45,6 +46,11 @@ namespace ns3
       {
         if (deltaInterference < 0) // expand exclusion region
         {
+
+          if ( sender == 6 && receiver == 5)
+          {
+            std::cout<<" expand exclusion region "<< std::endl;
+          }
           signalMap.SortAccordingToAttenuation ();
           uint32_t offset = 0;
           for (SignalMap::Iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
@@ -54,10 +60,16 @@ namespace ns3
             offset = _it - signalMap.begin ();
             if ( interferenceW <= it->currentExclusionRegion) //find edge.
             {
+              if ( sender == 6 && receiver == 5)
+              {
+                std::cout<<" find edge, interferencew: "<< interferenceW <<" current exclusion region: "<< it->currentExclusionRegion<< std::endl;
+              }
               break;
             }
           }
-          //std::cout<<" offset: "<< offset << std::endl;
+
+          if ( sender == 6 && receiver == 5)
+            std::cout<<" offset: "<< offset <<" collectionsize: "<< signalMap.GetSignalMap ().size ()<< std::endl;
 
           double interferenceSum = 0;
           for (SignalMap::Iterator _it = signalMap.begin () + offset; _it != signalMap.end (); ++ _it)
@@ -66,6 +78,11 @@ namespace ns3
             interferenceSum += interferenceW;
             if (interferenceSum >= fabs (deltaInterference))
             {
+              if ( sender == 6 && receiver == 5)
+              {
+                std::cout<<" sum: "<< interferenceSum <<" deltaInterference: "<< fabs (deltaInterference) << std::endl;
+              }
+
               it->currentExclusionRegion = interferenceW;
               return interferenceW;
             }
@@ -74,7 +91,14 @@ namespace ns3
           // we use the last item in the signal map as  current exlusion region
           double lastElementInterferenceW = DbmToW ( txPower - (signalMap.end () - 1) -> attenuation );
           if ( lastElementInterferenceW < it->currentExclusionRegion)
+          {
+            if ( sender == 6 && receiver == 5)
+            {
+              std::cout<<" used all, but cannot satisfy deltainterference requirement "<< std::endl;
+            }
+
             it -> currentExclusionRegion = lastElementInterferenceW;
+          }
           return it->currentExclusionRegion;
         }
         else if (deltaInterference > 0) // shrink exclusion region
@@ -95,8 +119,9 @@ namespace ns3
           // when the last signal map record introduce larger interference than the exclusion region, the offset is 1. 
           // we set the offset as 1 so that in the for loop, we can simply substract offset.
           // again, if the offset is one, the for loop will not execute.
-          for (SignalMap::Iterator _it = signalMap.end () - offset; _it != signalMap.end () - 1; -- _it)
+          for (SignalMap::Iterator _it = signalMap.end () - offset; _it != signalMap.begin () - 1; -- _it)
           {
+            //std::cout<<" offset: "<< offset <<" it-begin :"<< _it - signalMap.begin ()<< std::endl;
             double interferenceW = DbmToW (txPower - _it->attenuation );
             interferenceSum += interferenceW;
             if (interferenceSum > deltaInterference)
@@ -129,7 +154,7 @@ namespace ns3
           return it->currentExclusionRegion;
         }
       }
-      return it->currentExclusionRegion;
+      //return it->currentExclusionRegion;
     }
     LinkExclusionRegion linkExclusionRegion;
     linkExclusionRegion.sender = sender;

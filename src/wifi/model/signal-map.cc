@@ -29,6 +29,7 @@ namespace ns3
   }
   void SignalMap::AddOrUpdate (SignalMapItem item)
   {
+    //std::cout<<" signalmap.size: "<< m_signalMap.size () << std::endl;
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
       if (item.from == it->from && item.to == it->to )

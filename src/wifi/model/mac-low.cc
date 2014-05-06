@@ -382,7 +382,7 @@ namespace ns3 {
     m_lastNavDuration = Seconds (0);
     m_lastNavStart = Seconds (0);
     m_promisc = false;
-    m_sequenceNumber = 4090;
+    m_sequenceNumber = 0;
     m_currentSlot = 0;
     m_angle = 0;
     m_nextSendingSlot = 0;
@@ -723,10 +723,6 @@ namespace ns3 {
       uint32_t edgeLength = buff.ReadU8 ();
       std::string edge = buff.ReadString (edgeLength);
       m_signalMap.UpdateVehicleStatus (sender, angle, x, y, edge);
-      int64_t receivedNextSendingSlot = buff.ReadU64 ();
-      //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" edge: "<< edge << std::endl;
-
-      UpdateSendingStatus (hdr.GetAddr2().GetNodeId (), receivedNextSendingSlot);
       /*
       if ( Simulator::Now () > Seconds (START_PROCESS_TIME ) && (m_phy->GetChannelNumber () == DATA_CHANNEL ))
       {
@@ -996,6 +992,11 @@ namespace ns3 {
       }
       else if (hdr.GetAddr1 ().IsGroup ())
       { 
+
+        int64_t receivedNextSendingSlot = buff.ReadU64 ();
+        //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" edge: "<< edge << std::endl;
+
+        UpdateSendingStatus (hdr.GetAddr2().GetNodeId (), receivedNextSendingSlot);
         //m_signalMap.SortAccordingToInComingAttenuation ();
         //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
 
@@ -1053,23 +1054,32 @@ namespace ns3 {
 
         //====BROADCAST MESSAGE================
 
-        LinkEstimator linkEstimator;
-        m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
-        bool pdrUpdated = m_linkEstimator.IsPdrUpdated (sender, receiver, LINKE_ESTIMATOR_WINDOW_SIZE); // 20 as window size
-        if ( pdrUpdated == true)
+        if ( m_phy->GetChannelNumber () == DATA_CHANNEL)
         {
-          LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
-          // need dela_interference;
-          bool conditionTwoMeet = false;
-          double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, 0.7, 0.7, conditionTwoMeet);
-          //m_signalMap.PrintSignalMap (m_self.GetNodeId ()); // signal maps are sorted such that close by links are at the front of the signal map vector
+          LinkEstimator linkEstimator;
 
-          std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
-          SignalMap signalMap = SignalMap (signalMapVec);
-          double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER);
-          m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
-          Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
-          //std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
+          //std::cout<<m_self.GetNodeId () <<" receiving sequence number: "<< hdr.GetSequenceNumber () <<" from: "<< hdr.GetAddr2 ().GetNodeId () << std::endl;
+          m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
+          bool pdrUpdated = m_linkEstimator.IsPdrUpdated (sender, receiver, LINKE_ESTIMATOR_WINDOW_SIZE); // 20 as window size
+          if ( pdrUpdated == true)
+          {
+            LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
+            // need dela_interference;
+            bool conditionTwoMeet = false;
+            double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
+            if ( sender == 6 && receiver == 5)
+              std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr << std::endl;
+            //if ( m_self.GetNodeId () == 5)
+              //m_signalMap.PrintSignalMap (m_self.GetNodeId ()); // signal maps are sorted such that close by links are at the front of the signal map vector
+
+            std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
+            SignalMap signalMap = SignalMap (signalMapVec);
+            double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER);
+            m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
+            Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
+            if ( sender == 6 && receiver == 5)
+              std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
+          }
         }
 
 
@@ -1440,6 +1450,7 @@ rxPacket:
           PayloadBuffer buff = PayloadBuffer (payload);
           //uint8_t txPowerLevel = 0;//default tx Power level
           buff.WriteDouble (m_phy->GetObject<YansWifiPhy> ()->GetPowerDbm (txPower) + TX_GAIN);
+          //std::cout<<" encoded: "<< m_phy->GetObject<YansWifiPhy> ()->GetPowerDbm (txPower) + TX_GAIN << std::endl;
 
           pkt = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
           pkt->AddHeader (_hdr);
@@ -1680,8 +1691,10 @@ rxPacket:
       m_currentHdr.SetDuration (duration);
       if (m_phy->GetChannelNumber () == DATA_CHANNEL )
       {
+        //std::cout<<m_self.GetNodeId () <<" sending sequence number: "<< m_sequenceNumber << std::endl;
         m_currentHdr.SetSequenceNumber (m_sequenceNumber); // set sequence number for packets at data channel.
         m_sequenceNumber ++ ;
+        //std::cout<<m_self.GetNodeId () <<" seq_next: "<< m_sequenceNumber << std::endl;
       }
 
       //---------Add txPower---------------------------------------
@@ -1691,6 +1704,7 @@ rxPacket:
       uint8_t txPowerLevel = 0;//default tx Power level
       buff.WriteDouble (m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (txPowerLevel) + TX_GAIN);
 
+      //std::cout<<" encoded: "<< m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (0) << std::endl;
       buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
       buff.WriteU8 ((uint8_t)m_edge.size ());
       buff.WriteString (m_edge);
@@ -2331,6 +2345,9 @@ rxPacket:
 
   void MacLow::CalculateSchedule ()
   {
+    //std::cout<<" m_neighborSignalMaps.size (): "<<m_neighborSignalMaps.size () << std::endl;
+    //std::cout<<" m_nodesSendingStatus.size (): "<< m_nodesSendingStatus.size () << std::endl;
+    //std::cout<<" trying to calculate a schedule "<< std::endl;
     //==================Update Node Status========================================
     NodeStatus status;
     status.nodeId = m_self.GetNodeId ();
@@ -2340,10 +2357,14 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
+
     //=====================First Check If I Can Send Packets===========================
     std::vector<uint16_t> unitedExclusionRegion;
 
-    MacLow::CollectConflictingNodes (unitedExclusionRegion);
+    if ( m_nextSendingSlot <= GetCurrentSlot ())
+    {
+      CollectConflictingNodes (unitedExclusionRegion);
+    }
     bool selfMax = false;
     if ( m_nextSendingSlot == 0 || m_nextSendingSlot < GetCurrentSlot ())  // have not sent out any packets yet.
     {
@@ -2358,7 +2379,7 @@ rxPacket:
       {
         m_setDequeueCallback ();
         SendDataPacket ();
-        std::cout<<m_self.GetNodeId () << " is sending packet according to schedule "<< Simulator::Now () << std::endl;
+        //std::cout<<m_self.GetNodeId () << " is sending packet according to schedule "<< Simulator::Now () << std::endl;
       }
       return;
     }
@@ -2568,43 +2589,13 @@ rxPacket:
     }
   }
 
-  bool MacLow::ReceiveInCurrentSlot () //Using Signal Map And Nodes Sending Status
-  {
-    //Assuming Symmetric Channel Attenuation For Now.
-    bool returnValue=false;
-    std::vector<SignalMapItem> signalMap= Simulator::GetSignalMap (m_self.GetNodeId ());
-    std::vector<uint16_t> senders;
-    //Find out who are the receivers first.
-    for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
-    {
-      double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
-      if ( rxPower >= LINK_SELECTION_THRESHOLD)
-      {
-        senders.push_back (it->from);
-      }
-    }
-    for (std::vector<uint16_t>::iterator it = senders.begin (); it != senders.end (); ++ it)
-    {
-      for (std::vector<NodeSendingStatus>::iterator _it = m_nodesSendingStatus.begin (); _it != m_nodesSendingStatus.end (); ++ _it)
-      {
-        if ( _it->nodeId == *it)
-        {
-          //std::cout<<" sending slot: "<< _it->sendingSlot <<" current: "<< GetCurrentSlot ()<< std::endl;
-          if (_it->sendingSlot == GetCurrentSlot ())
-          {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
   void MacLow::SenseChannelAndSend ()
   {
     int64_t maxPropagationDelay = 1000;
     if ( m_phy->IsStateIdle ())
     {
       GenerateControlPacket ();
+      //std::cout<< m_self.GetNodeId ()<<" control signal, sending "<< std::endl;
       Simulator::Schedule (NanoSeconds (maxPropagationDelay), &MacLow::SendDataPacket, this);
     }
   }
@@ -2625,7 +2616,7 @@ rxPacket:
       if (it->nodeId == node)
       {
         it->sendingSlot = slot;
-        break;
+        return;
       }
     }
     NodeSendingStatus item;
@@ -2673,5 +2664,40 @@ rxPacket:
 
     //mac->Enqueue (pkt, addr1);
     delete [] payload;
+  }
+
+  bool MacLow::ReceiveInCurrentSlot () //Using Signal Map And Nodes Sending Status
+  {
+    //Assuming Symmetric Channel Attenuation For Now.
+    bool returnValue=false;
+    std::vector<SignalMapItem> signalMap= Simulator::GetSignalMap (m_self.GetNodeId ());
+    std::vector<uint16_t> senders;
+    //Find out who are the receivers first.
+    for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
+    {
+      double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
+      //std::cout<<" dist: "<< Simulator::GetDistanceBetweenTwoNodes (m_self.GetNodeId (), it->from)<<" rxpower: "<< rxPower<< " atten: "<< it->attenuation <<" default: "<< DEFAULT_POWER <<" txgain: "<< TX_GAIN<< std::endl;
+      if ( rxPower >= LINK_SELECTION_THRESHOLD)
+      {
+        senders.push_back (it->from);
+        //std::cout<<" been viewed as sender "<< std::endl;
+      }
+    }
+    for (std::vector<uint16_t>::iterator it = senders.begin (); it != senders.end (); ++ it)
+    {
+      //std::cout<<" m_nodesSendingStatus.size: "<<m_nodesSendingStatus.size ()<< std::endl;
+      for (std::vector<NodeSendingStatus>::iterator _it = m_nodesSendingStatus.begin (); _it != m_nodesSendingStatus.end (); ++ _it)
+      {
+        if ( _it->nodeId == *it)
+        {
+          //std::cout<<" sending slot: "<< _it->sendingSlot <<" current: "<< GetCurrentSlot ()<< std::endl;
+          if (_it->sendingSlot == GetCurrentSlot ())
+          {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 } // namespace ns3

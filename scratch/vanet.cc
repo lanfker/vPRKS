@@ -32,7 +32,10 @@ int main (int argc, char **argv)
   //LogComponentEnable ("Observation", LOG_LEVEL_DEBUG);
 
   Packet::EnablePrinting ();
-  string sumoConfig = "scratch/cross.sumocfg";
+  //string sumoConfig = "scratch/cross.sumocfg";
+  string sumoConfig = "scratch/line.sumocfg";
+  string nodeFile = "scratch/line.nod.xml";
+  string edgeFile= "scratch/line.edg.xml";
   int startTime = 0;
   int stopTime = 3000;
   bool startSumo = true;
@@ -49,6 +52,8 @@ int main (int argc, char **argv)
   cmd.Parse (argc, argv);
   Ptr<Ovnis> sim = CreateObjectWithAttributes <Ovnis> (
       "SumoConfig", StringValue (sumoConfig),
+      "NodeFile", StringValue (nodeFile),
+      "EdgeFile", StringValue (edgeFile),
       "SumoPath", StringValue (sumoPath),
       "SumoHost", StringValue (sumoHost),
       "StartTime", IntegerValue (startTime),

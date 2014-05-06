@@ -377,6 +377,7 @@ namespace ns3 {
       if ( it->nodeId == nodeId )
       {
         it->localSignalMap.clear ();
+        //std::cout<<" local signal map: "<< localSignalMap.size () << std::endl;
         for (std::vector<SignalMapItem>::iterator _it = localSignalMap.begin (); _it != localSignalMap.end (); ++ _it)
         {
           it->localSignalMap.push_back (*_it);
@@ -460,6 +461,7 @@ namespace ns3 {
   std::vector<NodeStatus> Simulator::m_nodeStatusTable;
   void Simulator::UpdateNodeStatus (uint16_t nodeId, NodeStatus nodeStatus)
   {
+    //std::cout<<" m_nodeStatusTable.size (): "<< m_nodeStatusTable.size () << std::endl;
     for (std::vector<NodeStatus>::iterator it = m_nodeStatusTable.begin (); it != m_nodeStatusTable.end (); ++ it)
     {
       if ( it->nodeId == nodeId)
@@ -542,6 +544,7 @@ namespace ns3 {
   }
   void Simulator::AddSendingNode (NodeSendingStatus nodeSendingStatus)
   {
+    //std::cout<<" m_sendingNodes.size (): "<< m_sendingNodes.size () << std::endl;
     for (std::vector<NodeSendingStatus>::iterator it = m_sendingNodes.begin (); it != m_sendingNodes.end () ; ++ it)
     {
       if ( it->nodeId == nodeSendingStatus.nodeId && it->sendingSlot == nodeSendingStatus.sendingSlot)
