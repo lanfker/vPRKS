@@ -44,13 +44,12 @@ namespace ns3
     {
       if ( it->sender == sender && it->receiver == receiver)
       {
+        //Change deltaInterference(dB) into deltaInterference(Watt)
+        deltaInterference = DbmToW (WToDbm (it->currentExclusionRegion) + deltaInterference) - it->currentExclusionRegion;
         if (deltaInterference < 0) // expand exclusion region
         {
 
-          if ( sender == 6 && receiver == 5)
-          {
-            std::cout<<" expand exclusion region "<< std::endl;
-          }
+          std::cout<<" expand exclusion region deltainterference: "<< deltaInterference<< std::endl;
           signalMap.SortAccordingToAttenuation ();
           uint32_t offset = 0;
           for (SignalMap::Iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
@@ -111,6 +110,7 @@ namespace ns3
             offset = signalMap.end () - _it;
             if ( interferenceW >= it->currentExclusionRegion)
             {
+              std::cout<<" shrink, exclusion region, edge found" << std::endl;
               break;
             }
           }
@@ -121,11 +121,12 @@ namespace ns3
           // again, if the offset is one, the for loop will not execute.
           for (SignalMap::Iterator _it = signalMap.end () - offset; _it != signalMap.begin () - 1; -- _it)
           {
-            //std::cout<<" offset: "<< offset <<" it-begin :"<< _it - signalMap.begin ()<< std::endl;
             double interferenceW = DbmToW (txPower - _it->attenuation );
             interferenceSum += interferenceW;
+            std::cout<<" offset: "<< offset <<" it-begin :"<< _it - signalMap.begin ()<<" deltainterference: "<< deltaInterference <<" sum: "<< interferenceSum<< std::endl;
             if (interferenceSum > deltaInterference)
             {
+              std::cout<<" shrink, interference sum greater than delta interference" << std::endl;
               if ( signalMap.end () - _it > 1)
               {
                 it->currentExclusionRegion = DbmToW (txPower - (_it-1)->attenuation );
@@ -141,11 +142,13 @@ namespace ns3
             }
             else if (interferenceSum == deltaInterference )
             {
+              std::cout<<" shrink, interference sum equals to delta interference" << std::endl;
               it->currentExclusionRegion = interferenceW;
               return it->currentExclusionRegion;
               // do not need reverse
             }
           }
+
           // if we used all the signal map records, yet we still cannot satisfy the delta interference requirement,
           // we use the first item in the signal map as  current exlusion region in this case
         }
