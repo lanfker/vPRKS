@@ -74,6 +74,7 @@ private:
 
   void SetNoiseFigure (double value);
   void SetErrorRateModel (Ptr<ErrorRateModel> rate);
+  double ComputeInterferenceWhenReceivingData ();
 
   double GetNoiseFigure (void) const;
   Ptr<ErrorRateModel> GetErrorRateModel (void) const;
@@ -96,6 +97,10 @@ private:
   void NotifyRxStart ();
   void NotifyRxEnd ();
   void EraseEvents (void);
+  void NotifyDataStartReceiving ();
+  void NotifyDataEndReceiving ();
+
+  void SampleInterferenceWhileReceivingData ();
 private:
   class NiChange
   {
@@ -125,9 +130,14 @@ private:
   NiChanges m_niChanges;
   double m_firstPower;
   bool m_rxing;
+  bool m_niDataReceivingSampling;
+  double m_varianceDataInterferenceW;
+  double m_dataInterferenceW;
   /// Returns an iterator to the first nichange, which is later than moment
   NiChanges::iterator GetPosition (Time moment);
   void AddNiChangeEvent (NiChange change);
+  double m_meanDataInterferenceW;
+  Time m_dataInterferenceSampleInterval;
 };
 
 } // namespace ns3

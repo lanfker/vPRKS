@@ -1059,7 +1059,6 @@ namespace ns3 {
         {
           LinkEstimator linkEstimator;
 
-          //std::cout<<m_self.GetNodeId () <<" receiving sequence number: "<< hdr.GetSequenceNumber () <<" from: "<< hdr.GetAddr2 ().GetNodeId () << std::endl;
           
           double linkDistance = Simulator::GetDistanceBetweenTwoNodes (sender, receiver);
           //std::cout<<" distance between s and r: "<<linkDistance << std::endl;
@@ -1071,20 +1070,16 @@ namespace ns3 {
             if ( pdrUpdated == true)
             {
               LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
-              // need dela_interference;
               bool conditionTwoMeet = false;
               double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
-              //if ( sender == 6 && receiver == 5)
               std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr <<" link length: "<<linkDistance<< std::endl;
-              //if ( m_self.GetNodeId () == 5)
-              //m_signalMap.PrintSignalMap (m_self.GetNodeId ()); // signal maps are sorted such that close by links are at the front of the signal map vector
 
               std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
               SignalMap signalMap = SignalMap (signalMapVec);
-              double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER);
+              double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
+              double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER, interferenceW);
               m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
               Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
-              //if ( sender == 6 && receiver == 5)
               std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
             }
           }

@@ -142,6 +142,7 @@ public:
   virtual Ptr<WifiChannel> GetChannel (void) const;
   virtual void ConfigureStandard (enum WifiPhyStandard standard);
   Time GetSwitchingDelay ();
+  double ComputeInterferenceWhenReceivingData ();
 
   double GetPowerDbm (uint8_t power) const;
 private:

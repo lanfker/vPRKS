@@ -444,6 +444,10 @@ switchChannel:
 
       //--------------------------------
 
+      if (Simulator::Now () > Seconds (START_PROCESS_TIME) && GetChannelNumber () == DATA_CHANNEL)
+      {
+        m_interference.NotifyDataStartReceiving ();
+      }
 
       double rxPowerW = DbmToW (rxPowerDbm);
       Time rxDuration = CalculateTxDuration (packet->GetSize (), txMode, preamble);
@@ -824,6 +828,11 @@ maybeCcaBusy:
       snrPer = m_interference.CalculateSnrPer (event);
       m_interference.NotifyRxEnd ();
 
+      if (Simulator::Now () > Seconds (START_PROCESS_TIME) && GetChannelNumber () == DATA_CHANNEL)
+      {
+        m_interference.NotifyDataEndReceiving ();
+      }
+
       NS_LOG_DEBUG ("mode=" << (event->GetPayloadMode ().GetDataRate ()) <<
           ", snr=" << snrPer.snr << ", per=" << snrPer.per << ", size=" << packet->GetSize ());
       //std::cout<<"SNR: "<< 10*log10 (snrPer.snr) <<" PDR: "<< 1 - snrPer.per << std::endl;
@@ -848,5 +857,10 @@ maybeCcaBusy:
   Time YansWifiPhy::GetSwitchingDelay ()
   {
     return m_channelSwitchDelay;
+  }
+
+  double YansWifiPhy::ComputeInterferenceWhenReceivingData ()
+  {
+    return m_interference.ComputeInterferenceWhenReceivingData ();
   }
 } // namespace ns3

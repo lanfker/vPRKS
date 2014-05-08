@@ -38,7 +38,11 @@ const uint16_t _ANGLE = 2;
 const uint16_t _BEGIN = 2;
 const uint16_t _END = 2;
 const uint16_t _ER = 2;
+const int64_t SIMULATION_END_TIME = 3000;//seconds
 
 const uint16_t SIGNAL_MAP_ITEM_SIZE = _FROM + _TO + _ATTENUATION + _ANGLE + _BEGIN + _END + _ER;
+const double NI_SAMPLE_FILTER = 4;
+const double ABSOLUTE_NI_THRESHOLD = 1.0e-09;
+const int64_t DATA_INTERFERENCE_SAMPLE_INTERVAL=20; //microseconds
 
 #endif

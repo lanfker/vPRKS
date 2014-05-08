@@ -23,6 +23,7 @@
 #include "ns3/simulator.h"
 #include "ns3/log.h"
 #include <algorithm>
+#include "ns3/settings.h"
 
 NS_LOG_COMPONENT_DEFINE ("InterferenceHelper");
 
@@ -118,6 +119,11 @@ InterferenceHelper::InterferenceHelper ()
     m_firstPower (0.0),
     m_rxing (false)
 {
+  m_niDataReceivingSampling = false;
+  m_meanDataInterferenceW = 0;
+  m_varianceDataInterferenceW = 0;
+  m_dataInterferenceSampleInterval = MicroSeconds ( DATA_INTERFERENCE_SAMPLE_INTERVAL);
+  m_dataInterferenceW = NOISE;
 }
 InterferenceHelper::~InterferenceHelper ()
 {
@@ -393,5 +399,68 @@ void
 InterferenceHelper::NotifyRxEnd ()
 {
   m_rxing = false;
+}
+
+void InterferenceHelper::NotifyDataStartReceiving ()
+{
+  m_niDataReceivingSampling = true;
+  SampleInterferenceWhileReceivingData ();
+}
+
+void InterferenceHelper::NotifyDataEndReceiving ()
+{
+  m_niDataReceivingSampling = false;
+}
+
+void InterferenceHelper::SampleInterferenceWhileReceivingData ()
+{
+  if ( Simulator::Now () >= Seconds (SIMULATION_END_TIME) || m_niDataReceivingSampling == false)
+  {
+    return;
+  }
+
+  if ( m_niDataReceivingSampling == true && Simulator::Now () >= Seconds (START_PROCESS_TIME) && m_niChanges.size () > 0)
+  {
+    double rxPowerW = m_niChanges.begin () ->GetDelta ();
+    double interferenceDuringPacketReception = m_firstPower;
+    for (NiChanges::iterator i = m_niChanges.begin () + 1; i != m_niChanges.end () && i->GetDelta () != -rxPowerW; ++ i)
+    {
+      if ( i->GetTime () > Simulator::Now ())
+      {
+        break;
+      }
+
+      interferenceDuringPacketReception += i->GetDelta ();
+      if ( interferenceDuringPacketReception < 0)
+      {
+        interferenceDuringPacketReception = 0;
+      }
+    }
+
+    if ( m_meanDataInterferenceW == 0)
+    {
+      m_meanDataInterferenceW = interferenceDuringPacketReception;
+    }
+    else 
+    {
+      if ( interferenceDuringPacketReception > m_meanDataInterferenceW + NI_SAMPLE_FILTER * sqrt (m_varianceDataInterferenceW) || interferenceDuringPacketReception > ABSOLUTE_NI_THRESHOLD )
+      {
+      }
+      else
+      {
+        double difference = interferenceDuringPacketReception - m_meanDataInterferenceW;
+        double increment = EWMA_COEFFICIENT * difference;
+        m_meanDataInterferenceW = m_meanDataInterferenceW + difference;
+        m_varianceDataInterferenceW = (1 - EWMA_COEFFICIENT) * (m_varianceDataInterferenceW + difference * increment);
+        m_dataInterferenceW = m_meanDataInterferenceW;
+      }
+    }
+  }
+  Simulator::Schedule (m_dataInterferenceSampleInterval, &InterferenceHelper::SampleInterferenceWhileReceivingData, this);
+}
+
+double InterferenceHelper::ComputeInterferenceWhenReceivingData ()
+{
+  return m_dataInterferenceW;
 }
 } // namespace ns3

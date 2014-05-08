@@ -33,7 +33,7 @@ namespace ns3
 
   // do we need the return value?
   double ExclusionRegionHelper::AdaptExclusionRegion (SignalMap signalMap,  double deltaInterference,
-      uint16_t sender, uint16_t receiver, double txPower)
+      uint16_t sender, uint16_t receiver, double txPower, double backgroundInterferenceW)
   {
 
     //std::cout<<" m_exclusionRegionCollection.size (): "<< m_exclusionRegionCollection.size ()<< std::endl;
@@ -45,7 +45,8 @@ namespace ns3
       if ( it->sender == sender && it->receiver == receiver)
       {
         //Change deltaInterference(dB) into deltaInterference(Watt)
-        deltaInterference = DbmToW (WToDbm (it->currentExclusionRegion) + deltaInterference) - it->currentExclusionRegion;
+        //deltaInterference = DbmToW (WToDbm (it->currentExclusionRegion) + deltaInterference) - it->currentExclusionRegion;
+        deltaInterference = DbmToW (WToDbm (backgroundInterferenceW) + deltaInterference) - it->currentExclusionRegion;
         if (deltaInterference < 0) // expand exclusion region
         {
 
