@@ -1070,17 +1070,20 @@ namespace ns3 {
             if ( pdrUpdated == true)
             {
               LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
-              bool conditionTwoMeet = false;
-              double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
-              std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr <<" link length: "<<linkDistance<< std::endl;
+              if ( _item.sender != 0 && _item.receiver != 0)
+              {
+                bool conditionTwoMeet = false;
+                double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
+                std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr <<" link length: "<<linkDistance << " estimationCount: "<< _item.estimationCount<< std::endl;
 
-              std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
-              SignalMap signalMap = SignalMap (signalMapVec);
-              double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
-              double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER, interferenceW);
-              m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
-              Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
-              std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
+                std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
+                SignalMap signalMap = SignalMap (signalMapVec);
+                double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
+                double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER, interferenceW);
+                m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
+                Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
+                std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
+              }
             }
           }
           else

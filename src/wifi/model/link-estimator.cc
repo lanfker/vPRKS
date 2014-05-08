@@ -58,6 +58,7 @@ namespace ns3
     item.timeStamp = timeStamp;
     item.instantPdr = 0;
     item.ewmaPdr = 0;
+    item.estimationCount = 0;
     item.receivedSequenceNumbers.push_back (seq);
     m_estimations.push_back (item);
 
@@ -124,9 +125,7 @@ namespace ns3
         if (_last - _first + 1 >= window)
         {
           it->instantPdr = (double)(it->receivedSequenceNumbers.size ()) / (_last - _first + 1);
-          std::cout<<" before ewma: "<< it->ewmaPdr;
           it->ewmaPdr = (m_coefficient) * it->ewmaPdr + (1- m_coefficient) * it->instantPdr;
-          std::cout<<" after ewma: "<< it->ewmaPdr << std::endl;
           /*
           if ( sender == 15)
           {
@@ -134,6 +133,7 @@ namespace ns3
           }
           */
           it->receivedSequenceNumbers.clear ();
+          it->estimationCount ++;
           return true;
         }
         else
@@ -167,8 +167,6 @@ namespace ns3
       if ( it->sender == sender && it->receiver == receiver)
       {
         it->receivedSequenceNumbers.clear ();
-        //it->instantPdr = 0;
-        //it->ewmaPdr = 0;
         return;
       }
     }

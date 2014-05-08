@@ -17,6 +17,7 @@ namespace ns3{
     double instantPdr;
     double ewmaPdr;
     Time timeStamp;
+    uint32_t estimationCount;
   }LinkEstimationItem;
 
   class LinkEstimator : public Object
