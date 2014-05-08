@@ -46,7 +46,7 @@ namespace ns3
       {
         //Change deltaInterference(dB) into deltaInterference(Watt)
         //deltaInterference = DbmToW (WToDbm (it->currentExclusionRegion) + deltaInterference) - it->currentExclusionRegion;
-        deltaInterference = DbmToW (WToDbm (backgroundInterferenceW) + deltaInterference) - it->currentExclusionRegion;
+        deltaInterference = DbmToW (WToDbm (backgroundInterferenceW) + deltaInterference) - backgroundInterferenceW;
         if (deltaInterference < 0) // expand exclusion region
         {
 

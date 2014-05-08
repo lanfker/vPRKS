@@ -195,4 +195,9 @@ namespace ns3
   {
     m_current -= offset;
   }
+
+  uint32_t PayloadBuffer::GetNumberOfUsedBytes ()
+  {
+    return m_current - m_data;
+  }
 }

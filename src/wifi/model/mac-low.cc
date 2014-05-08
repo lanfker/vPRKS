@@ -1722,6 +1722,7 @@ rxPacket:
       //std::cout<<m_self.GetNodeId () <<" send: sending slot: "<< m_nextSendingSlot << std::endl;
       buff.WriteU64 (m_nextSendingSlot);
 
+      //std::cout<<" used bytes: "<< buff.GetNumberOfUsedBytes () << std::endl;  50 bytes or 49 bytes
       //=========================Vehicle Density distribution
       /*
       std::vector<RoadVehicleItem> directionDistribution =  m_signalMap.ComputeVehicleDirectionDistribution ();

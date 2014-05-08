@@ -21,6 +21,7 @@ namespace ns3{
       uint32_t ReadU32();
       uint64_t ReadU64 ();
       uint32_t CheckRemainBytes (uint32_t bufferLength);
+      uint32_t GetNumberOfUsedBytes ();
       void Rewind (uint32_t offset);
 
       void WriteU8 (uint8_t value);
