@@ -59,28 +59,24 @@ namespace ns3
             offset = _it - signalMap.begin ();
             if ( interferenceW <= it->currentExclusionRegion) //find edge.
             {
-              if ( sender == 6 && receiver == 5)
-              {
-                std::cout<<" find edge, interferencew: "<< interferenceW <<" current exclusion region: "<< it->currentExclusionRegion<< std::endl;
-              }
+              std::cout<<" find edge, interferencew: "<< interferenceW <<" current exclusion region: "<< it->currentExclusionRegion<< std::endl;
               break;
             }
           }
 
+          /*
           if ( sender == 6 && receiver == 5)
             std::cout<<" offset: "<< offset <<" collectionsize: "<< signalMap.GetSignalMap ().size ()<< std::endl;
+            */
 
           double interferenceSum = 0;
-          for (SignalMap::Iterator _it = signalMap.begin () + offset; _it != signalMap.end (); ++ _it)
+          for (SignalMap::Iterator _it = signalMap.begin () + offset + 1; _it != signalMap.end (); ++ _it)
           {
             double interferenceW = DbmToW (txPower - _it->attenuation );
             interferenceSum += interferenceW;
             if (interferenceSum >= fabs (deltaInterference))
             {
-              if ( sender == 6 && receiver == 5)
-              {
-                std::cout<<" sum: "<< interferenceSum <<" deltaInterference: "<< fabs (deltaInterference) << std::endl;
-              }
+              std::cout<<" sum: "<< interferenceSum <<" deltaInterference: "<< fabs (deltaInterference) <<" target: sum interference greater than delta, then we can stop, current InterferenceW: " << interferenceW << std::endl;
 
               it->currentExclusionRegion = interferenceW;
               return interferenceW;
@@ -91,10 +87,7 @@ namespace ns3
           double lastElementInterferenceW = DbmToW ( txPower - (signalMap.end () - 1) -> attenuation );
           if ( lastElementInterferenceW < it->currentExclusionRegion)
           {
-            if ( sender == 6 && receiver == 5)
-            {
-              std::cout<<" used all, but cannot satisfy deltainterference requirement "<< std::endl;
-            }
+            std::cout<<" used all, but cannot satisfy deltainterference requirement "<< std::endl;
 
             it -> currentExclusionRegion = lastElementInterferenceW;
           }
@@ -110,7 +103,8 @@ namespace ns3
             offset = signalMap.end () - _it;
             if ( interferenceW >= it->currentExclusionRegion)
             {
-              std::cout<<" shrink, exclusion region, edge found" << std::endl;
+              offset ++;
+              std::cout<<" shrink, exclusion region, edge found  interferenceW: " << interferenceW <<" current exclusion region: "<< it->currentExclusionRegion << std::endl;
               break;
             }
           }
@@ -123,18 +117,24 @@ namespace ns3
           {
             double interferenceW = DbmToW (txPower - _it->attenuation );
             interferenceSum += interferenceW;
-            std::cout<<" offset: "<< offset <<" it-begin :"<< _it - signalMap.begin ()<<" deltainterference: "<< deltaInterference <<" sum: "<< interferenceSum<< std::endl;
+            //std::cout<<" offset: "<< offset <<" it-begin :"<< _it - signalMap.begin ()<<" deltainterference: "<< deltaInterference <<" sum: "<< interferenceSum<< std::endl;
             if (interferenceSum > deltaInterference)
             {
-              std::cout<<" shrink, interference sum greater than delta interference" << std::endl;
+              //std::cout<<" shrink, interference sum greater than delta interference" << std::endl;
+              std::cout<<" sum: "<< interferenceSum <<" deltaInterference: "<< fabs (deltaInterference) <<" target: sum interference greater than delta, then we can stop" ;
+              
               if ( signalMap.end () - _it > 1)
               {
-                it->currentExclusionRegion = DbmToW (txPower - (_it-1)->attenuation );
+                it->currentExclusionRegion = DbmToW (txPower - (_it+1)->attenuation );
+                //std::cout<<" txpower: "<< txPower <<" _it-1->from "<< (_it - 1)->from <<" atten: "<< (_it-1)->attenuation <<" er: "<< it->currentExclusionRegion << std::endl;
+                std::cout<<" current InterferenceW: "<< DbmToW (txPower - (_it+1)->attenuation ) << std::endl;
+
                 return it->currentExclusionRegion;
               }
               else
               {
                 it->currentExclusionRegion = interferenceW;
+                std::cout<<" current InterferenceW: "<< interferenceW << std::endl;
                 return it->currentExclusionRegion;
               }
               //it->currentExclusionRegion = 
@@ -154,6 +154,7 @@ namespace ns3
         }
         else if (deltaInterference == 0) //keep unchanged.
         {
+          std::cout<<" delta Interference equals to zero, does not have to change exclusion region. " << std::endl;
           return it->currentExclusionRegion;
         }
       }

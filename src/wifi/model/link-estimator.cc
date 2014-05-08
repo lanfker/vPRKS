@@ -21,7 +21,7 @@ namespace ns3
   }
   LinkEstimator::LinkEstimator ()
   {
-    m_coefficient = 0.8;
+    m_coefficient = EWMA_COEFFICIENT;
     m_maxExpireTime = Seconds (OBSERVATION_EXPIRATION_TIME);
   }
 
@@ -124,7 +124,9 @@ namespace ns3
         if (_last - _first + 1 >= window)
         {
           it->instantPdr = (double)(it->receivedSequenceNumbers.size ()) / (_last - _first + 1);
-          it->ewmaPdr = (1-m_coefficient) * it->ewmaPdr + m_coefficient * it->instantPdr;
+          std::cout<<" before ewma: "<< it->ewmaPdr;
+          it->ewmaPdr = (m_coefficient) * it->ewmaPdr + (1- m_coefficient) * it->instantPdr;
+          std::cout<<" after ewma: "<< it->ewmaPdr << std::endl;
           /*
           if ( sender == 15)
           {
@@ -156,5 +158,19 @@ namespace ns3
     item.sender = 0;
     item.receiver = 0;
     return item;
+  }
+
+  void LinkEstimator::ClearSequenceNumbers (uint16_t sender, uint16_t receiver)
+  {
+    for (std::vector<LinkEstimationItem>::iterator it = m_estimations.begin (); it != m_estimations.end (); ++ it)
+    {
+      if ( it->sender == sender && it->receiver == receiver)
+      {
+        it->receivedSequenceNumbers.clear ();
+        //it->instantPdr = 0;
+        //it->ewmaPdr = 0;
+        return;
+      }
+    }
   }
 }

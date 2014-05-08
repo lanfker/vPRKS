@@ -8,6 +8,7 @@ const double DEFAULT_EXCLUSION_REGION_WATT = 9.0371e-13;//Watt
 const uint64_t PAKCET_GENERATION_INTERVAL = 400;// in milliseconds. This is the default interval for safety message.
 const double NOISE = 2.00619e-13; //Watt   -96.976279387 dBm
 const double DESIRED_PDR = 0.9;
+const double MAX_LINK_DISTANCE = 300.0; // meters
 const double EWMA_COEFFICIENT = 0.8;
 const uint32_t LINKE_ESTIMATOR_WINDOW_SIZE = 20;
 const double LINK_DISTANCE_THRESHOLD = 500;

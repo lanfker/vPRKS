@@ -30,6 +30,7 @@ namespace ns3{
       void PrintSeqNumbers (std::vector<uint32_t> &vec);
       bool IsPdrUpdated (uint16_t sender, uint16_t receiver, uint32_t window);
       LinkEstimationItem GetLinkEstimationItem (uint16_t sender, uint16_t receiver);
+      void ClearSequenceNumbers (uint16_t sender, uint16_t receiver);
     private:
       std::vector<LinkEstimationItem> m_estimations;
       double m_coefficient;
