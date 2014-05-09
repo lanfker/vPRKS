@@ -998,6 +998,13 @@ namespace ns3 {
         //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" edge: "<< edge << std::endl;
 
         UpdateSendingStatus (hdr.GetAddr2().GetNodeId (), receivedNextSendingSlot);
+        uint8_t size = buff.ReadU8 ();
+        for (uint8_t i = 0; i < size; ++ i)
+        {
+          uint16_t nodeId = buff.ReadU16 ();
+          int64_t sendingSlot = (int64_t)buff.ReadU64 ();
+          UpdateSendingStatus (nodeId, sendingSlot);
+        }
         //m_signalMap.SortAccordingToInComingAttenuation ();
         //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
 
@@ -1059,9 +1066,7 @@ namespace ns3 {
         {
           LinkEstimator linkEstimator;
 
-          
           double linkDistance = Simulator::GetDistanceBetweenTwoNodes (sender, receiver);
-          //std::cout<<" distance between s and r: "<<linkDistance << std::endl;
 
           if ( linkDistance <= MAX_LINK_DISTANCE)
           {
@@ -1104,7 +1109,6 @@ namespace ns3 {
         obsItem.timeStamp = Simulator::Now ();
         m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
 
-        //<< m_observation.FindMinimumObservationLength () << std::endl;
         m_observation.RemoveExpireItems (Seconds(OBSERVATION_EXPIRATION_TIME), MAX_OBSERVATION_ITEMS_PER_LINK);
 
         /*
@@ -1721,6 +1725,14 @@ rxPacket:
 
       //std::cout<<m_self.GetNodeId () <<" send: sending slot: "<< m_nextSendingSlot << std::endl;
       buff.WriteU64 (m_nextSendingSlot);
+      std::vector<NodeSendingStatus> vec = GetFirstTwoNodeSendingSlot (GetCurrentSlot ());
+      uint8_t size = (uint8_t)vec.size ();
+      buff.WriteU8 (size);
+      for (uint8_t i = 0; i < size; ++ i)
+      {
+        buff.WriteU16 (vec[i].nodeId);
+        buff.WriteU64 (vec[i].sendingSlot);
+      }
 
       //std::cout<<" used bytes: "<< buff.GetNumberOfUsedBytes () << std::endl;  50 bytes or 49 bytes
       //=========================Vehicle Density distribution
@@ -2368,6 +2380,13 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
+    NodeSendingStatus sendingStatus;
+    sendingStatus.nodeId = m_self.GetNodeId ();
+    sendingStatus.sendingSlot = m_nextSendingSlot;
+    //If m_nextSendingSlot is always the same, the add method will simply locate the record and return.
+    //If the current slot equals to m_nextSendingSlot, in Simulator, the value would still be the current slot. 
+    //This is convenient for us to check if a receiver should be in the data plane while it is not.
+    Simulator::AddSendingNode (sendingStatus);
 
     //=====================First Check If I Can Send Packets===========================
     std::vector<uint16_t> unitedExclusionRegion;
@@ -2403,6 +2422,7 @@ rxPacket:
     }
     //Schedule Control Channel Logic. *************************************************
 
+    Simulator::IfSelfShouldBeReceiver (m_self.GetNodeId (), GetCurrentSlot ());
     if (m_phy->IsStateIdle ())
     {
       //std::cout<<m_self.GetNodeId () <<" will schedule control packet in control channel "<<Simulator::Now ()<< std::endl;
@@ -2710,5 +2730,28 @@ rxPacket:
       }
     }
     return false;
+  }
+
+  void MacLow::SortSendingSlot ()
+  {
+    sort (m_nodesSendingStatus.begin (), m_nodesSendingStatus.end (), SendSlotCompare);
+  }
+
+  std::vector<NodeSendingStatus> MacLow::GetFirstTwoNodeSendingSlot (int64_t currentSlot)
+  {
+    std::vector<NodeSendingStatus> vec;
+    for (std::vector<NodeSendingStatus>::iterator it = m_nodesSendingStatus.begin (); it != m_nodesSendingStatus.end (); ++ it)
+    {
+      std::cout<<" nodeid: "<< it->nodeId <<" sendingslot: "<< it->sendingSlot << std::endl;
+      if ( it->sendingSlot <= currentSlot)
+        continue;
+      else
+      {
+        vec.push_back (*it);
+        if (vec.size () == 2)
+          return vec;
+      }
+    }
+    return vec;
   }
 } // namespace ns3

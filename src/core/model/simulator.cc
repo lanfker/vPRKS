@@ -38,6 +38,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include "settings.h"
 
 NS_LOG_COMPONENT_DEFINE ("Simulator");
 
@@ -531,6 +532,7 @@ namespace ns3 {
   }
 
   std::vector<NodeSendingStatus> Simulator::m_sendingNodes;
+  // This method is not needed
   void Simulator::RemoveSendingNode (NodeSendingStatus nodeSendingStatus)
   {
     for (std::vector<NodeSendingStatus>::iterator it = m_sendingNodes.begin (); it != m_sendingNodes.end () ; ++ it)
@@ -542,16 +544,35 @@ namespace ns3 {
       }
     }
   }
-  void Simulator::AddSendingNode (NodeSendingStatus nodeSendingStatus)
-  {
-    //std::cout<<" m_sendingNodes.size (): "<< m_sendingNodes.size () << std::endl;
+
+  bool Simulator::IfSelfShouldBeReceiver (uint16_t self, int64_t currentSlot)
+  { 
     for (std::vector<NodeSendingStatus>::iterator it = m_sendingNodes.begin (); it != m_sendingNodes.end () ; ++ it)
     {
-      if ( it->nodeId == nodeSendingStatus.nodeId && it->sendingSlot == nodeSendingStatus.sendingSlot)
+      if ( it->sendingSlot == currentSlot)
       {
+        double distance = Simulator::GetDistanceBetweenTwoNodes (self, it->nodeId);
+        if ( distance <= MAX_LINK_DISTANCE)
+        {
+          std::cout<<Simulator::Now () <<" distance: "<< distance <<" node: "<< self <<" should be a receiver of " << it->nodeId <<" in slot: "<< currentSlot << std::endl;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  void Simulator::AddSendingNode (NodeSendingStatus nodeSendingStatus)
+  {
+    for (std::vector<NodeSendingStatus>::iterator it = m_sendingNodes.begin (); it != m_sendingNodes.end () ; ++ it)
+    {
+      if ( it->nodeId == nodeSendingStatus.nodeId && it->sendingSlot <= nodeSendingStatus.sendingSlot)
+      {
+        it->sendingSlot = nodeSendingStatus.sendingSlot;
         return;
       }
     }
+
     // ideally, the vector m_sendingNodes should not contain the node that we are going to add.
     m_sendingNodes.push_back (nodeSendingStatus);
   }

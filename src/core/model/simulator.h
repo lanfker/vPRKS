@@ -835,6 +835,7 @@ public:
   static std::vector<NodeSendingStatus> m_sendingNodes;
   static void RemoveSendingNode (NodeSendingStatus nodeSendingStatus);
   static void AddSendingNode (NodeSendingStatus nodeSendingStatus);
+  static bool IfSelfShouldBeReceiver (uint16_t self, int64_t currentSlot);
 
   static bool IsReceiverInCurrentSlot (uint16_t nodeId, int16_t slot);
   static bool CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor);

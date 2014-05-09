@@ -554,6 +554,8 @@ public:
   void SetChannelNumber (uint32_t channelNumber);
   void UpdateSendingStatus (uint16_t node, int64_t slot);
   void GenerateControlPacket ();
+  void SortSendingSlot ();
+  std::vector<NodeSendingStatus> GetFirstTwoNodeSendingSlot (int64_t currentSlot);
 
 private:
   //-----------------------------------VPRKS----------------------
@@ -578,6 +580,14 @@ private:
   ExclusionRegionHelper m_exclusionRegionHelper;
   MinimumVarianceController m_minimumVarianceController;
   std::vector<NodeSendingStatus> m_nodesSendingStatus;
+
+
+  struct SendSlotCompare {
+    bool operator () (NodeSendingStatus a, NodeSendingStatus b)
+    {
+      return a.sendingSlot < b.sendingSlot;
+    }
+  }SendSlotCompare;
 
 
   //----------------------------------End VPRKS-------------------

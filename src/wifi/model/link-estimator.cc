@@ -57,7 +57,7 @@ namespace ns3
     item.receiver = receiver;
     item.timeStamp = timeStamp;
     item.instantPdr = 0;
-    item.ewmaPdr = 0;
+    item.ewmaPdr = DESIRED_PDR;
     item.estimationCount = 0;
     item.receivedSequenceNumbers.push_back (seq);
     m_estimations.push_back (item);
