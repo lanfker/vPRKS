@@ -995,7 +995,7 @@ namespace ns3 {
       { 
 
         int64_t receivedNextSendingSlot = buff.ReadU64 ();
-        //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" edge: "<< edge << std::endl;
+        //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" from "<< hdr.GetAddr2 ().GetNodeId ()<< std::endl;
 
         UpdateSendingStatus (hdr.GetAddr2().GetNodeId (), receivedNextSendingSlot);
         uint8_t size = buff.ReadU8 ();
@@ -1084,7 +1084,7 @@ namespace ns3 {
                 std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
                 SignalMap signalMap = SignalMap (signalMapVec);
                 double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
-                double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER, interferenceW);
+                double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER, interferenceW, _item.ewmaPdr);
                 m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
                 Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
                 std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
@@ -1725,6 +1725,7 @@ rxPacket:
 
       //std::cout<<m_self.GetNodeId () <<" send: sending slot: "<< m_nextSendingSlot << std::endl;
       buff.WriteU64 (m_nextSendingSlot);
+      SortSendingSlot ();
       std::vector<NodeSendingStatus> vec = GetFirstTwoNodeSendingSlot (GetCurrentSlot ());
       uint8_t size = (uint8_t)vec.size ();
       buff.WriteU8 (size);
@@ -2386,6 +2387,7 @@ rxPacket:
     //If m_nextSendingSlot is always the same, the add method will simply locate the record and return.
     //If the current slot equals to m_nextSendingSlot, in Simulator, the value would still be the current slot. 
     //This is convenient for us to check if a receiver should be in the data plane while it is not.
+    //std::cout<<m_self.GetNodeId () <<" "<< Simulator::Now ()<<" Simulator, add sending status: "<< " nodeid: "<< sendingStatus.nodeId <<" slot: "<< sendingStatus.sendingSlot << std::endl;
     Simulator::AddSendingNode (sendingStatus);
 
     //=====================First Check If I Can Send Packets===========================
@@ -2609,7 +2611,7 @@ rxPacket:
 
   int64_t MacLow::FindNextSendingSlot (std::vector<uint16_t> exclusionRegion)
   {
-    int64_t slot = GetCurrentSlot () + 1;
+    int64_t slot = GetCurrentSlot () + SLOT_OFFSET_FOR_FUTURE_CALCULATION; // offset is 100 slots
     while (true)
     {
       if (IsSelfMaximum (exclusionRegion, slot) == true)
@@ -2742,10 +2744,13 @@ rxPacket:
     std::vector<NodeSendingStatus> vec;
     for (std::vector<NodeSendingStatus>::iterator it = m_nodesSendingStatus.begin (); it != m_nodesSendingStatus.end (); ++ it)
     {
-      std::cout<<" nodeid: "<< it->nodeId <<" sendingslot: "<< it->sendingSlot << std::endl;
+      //std::cout<<m_self.GetNodeId ()<<" nodeid: "<< it->nodeId <<" sendingslot: "<< it->sendingSlot << std::endl;
       if ( it->sendingSlot <= currentSlot)
+      {
         continue;
-      else
+      }
+      else if ( m_signalMap.DistanceToNeighbor ( it->nodeId, m_positionX, m_positionY) <= MAX_LINK_DISTANCE)       
+        //slot condition is met. need to check distance to sender.
       {
         vec.push_back (*it);
         if (vec.size () == 2)

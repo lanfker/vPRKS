@@ -20,7 +20,7 @@ const double LINK_SELECTION_THRESHOLD = -87; //dBM
 const uint16_t DBM_AMPLIFY_TIMES = 300;
 const double DEFAULT_POWER=40; //dBm
 const uint32_t MAXIMUM_POWER = 300; //dBm
-const int64_t START_PROCESS_TIME = 20; //seconds
+const int64_t START_PROCESS_TIME = 30; //seconds
 const uint32_t DATA_CHANNEL = 1;
 const uint32_t CONTROL_CHANNEL = 2;
 const double DELIVERY_100_SNR = 14; //dB
@@ -44,5 +44,7 @@ const uint16_t SIGNAL_MAP_ITEM_SIZE = _FROM + _TO + _ATTENUATION + _ANGLE + _BEG
 const double NI_SAMPLE_FILTER = 4;
 const double ABSOLUTE_NI_THRESHOLD = 1.0e-09;
 const int64_t DATA_INTERFERENCE_SAMPLE_INTERVAL=20; //microseconds
+const int64_t SLOT_OFFSET_FOR_FUTURE_CALCULATION = 30;
+const double EWMA_PDR_PROTECTION_THRESHOLD = 0.04; // this if for exclusion region shrink 
 
 #endif

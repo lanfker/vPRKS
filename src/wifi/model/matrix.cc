@@ -121,7 +121,7 @@ namespace ns3
 
   bool Matrix::CheckNanAndInf ()
   {
-    int i,j;
+    uint32_t i,j;
     for ( i = 0; i < GetM (); ++ i)
     {
       for (j = 0; j < GetN (); ++ j)

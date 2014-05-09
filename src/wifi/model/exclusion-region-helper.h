@@ -23,7 +23,7 @@ namespace ns3{
       static TypeId GetTypeId(void);
       ExclusionRegionHelper ();
       ~ExclusionRegionHelper ();
-      double AdaptExclusionRegion (SignalMap signalMap, double deltaInterference, uint16_t sender, uint16_t receiver, double txPower, double interferenceW);
+      double AdaptExclusionRegion (SignalMap signalMap, double deltaInterference, uint16_t sender, uint16_t receiver, double txPower, double interferenceW, double ewmaPdr);
       double DbmToW (double dBm);
       double WToDbm (double w);
 

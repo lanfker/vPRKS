@@ -33,7 +33,7 @@ namespace ns3
 
   // do we need the return value?
   double ExclusionRegionHelper::AdaptExclusionRegion (SignalMap signalMap,  double deltaInterference,
-      uint16_t sender, uint16_t receiver, double txPower, double backgroundInterferenceW)
+      uint16_t sender, uint16_t receiver, double txPower, double backgroundInterferenceW, double ewmaPdr)
   {
 
     //std::cout<<" m_exclusionRegionCollection.size (): "<< m_exclusionRegionCollection.size ()<< std::endl;
@@ -124,7 +124,7 @@ namespace ns3
               //std::cout<<" shrink, interference sum greater than delta interference" << std::endl;
               std::cout<<" sum: "<< interferenceSum <<" deltaInterference: "<< fabs (deltaInterference) <<" target: sum interference greater than delta, then we can stop" ;
               
-              if ( signalMap.end () - _it > 1)
+              if ( signalMap.end () - _it > 1 && ewmaPdr - DESIRED_PDR < EWMA_PDR_PROTECTION_THRESHOLD)
               {
                 it->currentExclusionRegion = DbmToW (txPower - (_it+1)->attenuation );
                 //std::cout<<" txpower: "<< txPower <<" _it-1->from "<< (_it - 1)->from <<" atten: "<< (_it-1)->attenuation <<" er: "<< it->currentExclusionRegion << std::endl;

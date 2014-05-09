@@ -351,4 +351,17 @@ namespace ns3
       }
     }
   }
+
+  double SignalMap::DistanceToNeighbor (uint16_t neighbor, double x, double y)
+  {
+    for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
+    {
+      if ( it->from == neighbor)
+      {
+        double distance = sqrt ( pow ( it->x - x, 2) + pow (it->y - y, 2));
+        return distance;
+      }
+    }
+    return 0;
+  }
 }
