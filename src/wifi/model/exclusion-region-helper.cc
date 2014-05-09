@@ -47,6 +47,7 @@ namespace ns3
         //Change deltaInterference(dB) into deltaInterference(Watt)
         //deltaInterference = DbmToW (WToDbm (it->currentExclusionRegion) + deltaInterference) - it->currentExclusionRegion;
         deltaInterference = DbmToW (WToDbm (backgroundInterferenceW) + deltaInterference) - backgroundInterferenceW;
+        //std::cout<<" delta interference: "<< deltaInterference<<" backgroundInterferenceW: "<< backgroundInterferenceW << std::endl;
         if (deltaInterference < 0) // expand exclusion region
         {
 
@@ -148,6 +149,18 @@ namespace ns3
               return it->currentExclusionRegion;
               // do not need reverse
             }
+          }
+          //If we cannot locate the last exclusion region, we use the last signal map record as the exclusion region.
+          //This is valid since our protocol requires us to shrink the exclusion region.
+          if ( signalMap.GetSignalMap ().size () != 0)
+          {
+            double interferenceW = DbmToW (txPower - (signalMap.end ()-1)->attenuation);
+            if ( interferenceW > it->currentExclusionRegion) // if the last item is greater than the exclusion region, this means the exclusion region is too large
+              it->currentExclusionRegion = interferenceW;
+            interferenceW = DbmToW (txPower - signalMap.begin ()->attenuation); 
+            if ( interferenceW < it->currentExclusionRegion) // if the first item is smaller than the exclusion region,this means the exclusion region is too small.
+              it->currentExclusionRegion = interferenceW;
+            return it->currentExclusionRegion;
           }
 
           // if we used all the signal map records, yet we still cannot satisfy the delta interference requirement,

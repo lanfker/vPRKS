@@ -452,7 +452,7 @@ void InterferenceHelper::SampleInterferenceWhileReceivingData ()
         double increment = EWMA_COEFFICIENT * difference;
         m_meanDataInterferenceW = m_meanDataInterferenceW + difference;
         m_varianceDataInterferenceW = (1 - EWMA_COEFFICIENT) * (m_varianceDataInterferenceW + difference * increment);
-        m_dataInterferenceW = m_meanDataInterferenceW;
+        m_dataInterferenceW = m_meanDataInterferenceW + NOISE;
       }
     }
   }
