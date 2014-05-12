@@ -823,7 +823,10 @@ maybeCcaBusy:
       NS_LOG_FUNCTION (this << packet << event);
       NS_ASSERT (IsStateRx ());
       NS_ASSERT (event->GetEndTime () == Simulator::Now ());
-      std::cout<<Simulator::Now () <<" end receive"<< std::endl;
+
+      double currentSlot = Simulator::Now ().GetNanoSeconds () / (SLOT_LENGTH * 1000);
+      Time next = MicroSeconds ((currentSlot + 1) * 1500);
+      std::cout<<Simulator::Now () <<" end receive, still got "<< next - Simulator::Now () <<" before slot ends" <<std::endl;
 
       struct InterferenceHelper::SnrPer snrPer;
       snrPer = m_interference.CalculateSnrPer (event);
