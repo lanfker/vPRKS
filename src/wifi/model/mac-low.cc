@@ -2431,7 +2431,7 @@ rxPacket:
       SetChannelNumber (CONTROL_CHANNEL);
       Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
           &MacLow::ScheduleControlSignalTransmission, this);
-      int64_t scheduleDelay = 1200; // Need To Test How Many MicroSeconds It Will Take
+      int64_t scheduleDelay = 1249; // Need To Test How Many MicroSeconds It Will Take
       Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
     }
   }
@@ -2637,7 +2637,7 @@ rxPacket:
   {
     int64_t seed =GetCurrentSlot ()  * 10000 + m_self.GetNodeId ();
     srand (seed);
-    int64_t backoffTime = 100000;
+    int64_t backoffTime = 50000;
     backoffTime = rand () % backoffTime;
     Simulator::Schedule (NanoSeconds (abs (backoffTime)), &MacLow::SenseChannelAndSend, this);
   }

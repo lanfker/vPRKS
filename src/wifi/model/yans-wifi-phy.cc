@@ -823,6 +823,7 @@ maybeCcaBusy:
       NS_LOG_FUNCTION (this << packet << event);
       NS_ASSERT (IsStateRx ());
       NS_ASSERT (event->GetEndTime () == Simulator::Now ());
+      std::cout<<Simulator::Now () <<" end receive"<< std::endl;
 
       struct InterferenceHelper::SnrPer snrPer;
       snrPer = m_interference.CalculateSnrPer (event);
