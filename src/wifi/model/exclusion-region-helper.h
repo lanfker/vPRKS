@@ -15,6 +15,7 @@ namespace ns3{
     uint16_t sender;
     uint16_t receiver;
     double currentExclusionRegion;
+    uint8_t version;
   }LinkExclusionRegion;
 
   class ExclusionRegionHelper : public Object
@@ -26,6 +27,9 @@ namespace ns3{
       double AdaptExclusionRegion (SignalMap signalMap, double deltaInterference, uint16_t sender, uint16_t receiver, double txPower, double interferenceW, double ewmaPdr);
       double DbmToW (double dBm);
       double WToDbm (double w);
+      void AddOrUpdateExclusionRegion (LinkExclusionRegion item);
+      std::vector<LinkExclusionRegion> GetLatestUpdatedItems (uint32_t count, SignalMap signalMap);
+      double GetExclusionRegion (uint16_t sender, uint16_t receiver);
 
     private:
       std::vector<LinkExclusionRegion> m_exclusionRegionCollection;

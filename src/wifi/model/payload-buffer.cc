@@ -48,17 +48,6 @@ namespace ns3
     return value;
   }
 
-  double PayloadBuffer::ReadDouble ()
-  {
-    double value = 0;
-    uint8_t* buff = (uint8_t *)&value;
-
-    for (uint32_t i = 0; i < sizeof (double); ++ i, ++ buff)
-    {
-      *buff = ReadU8 ();
-    }
-    return value;
-  }
 
   PayloadBuffer::~PayloadBuffer ()
   {
@@ -149,6 +138,18 @@ namespace ns3
     {
       WriteU8 (*buff);
     }
+  }
+
+  double PayloadBuffer::ReadDouble ()
+  {
+    double value = 0;
+    uint8_t* buff = (uint8_t *)&value;
+
+    for (uint32_t i = 0; i < sizeof (double); ++ i, ++ buff)
+    {
+      *buff = ReadU8 ();
+    }
+    return value;
   }
 
   void PayloadBuffer::ReSetPointer ()

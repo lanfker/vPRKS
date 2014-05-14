@@ -44,6 +44,7 @@ namespace ns3
     {
       if ( it->sender == sender && it->receiver == receiver)
       {
+        it->version ++;
         //Change deltaInterference(dB) into deltaInterference(Watt)
         //deltaInterference = DbmToW (WToDbm (it->currentExclusionRegion) + deltaInterference) - it->currentExclusionRegion;
         deltaInterference = DbmToW (WToDbm (backgroundInterferenceW) + deltaInterference) - backgroundInterferenceW;
@@ -177,6 +178,7 @@ namespace ns3
     LinkExclusionRegion linkExclusionRegion;
     linkExclusionRegion.sender = sender;
     linkExclusionRegion.receiver = receiver;
+    linkExclusionRegion.version = 0;
     linkExclusionRegion.currentExclusionRegion = DEFAULT_EXCLUSION_REGION_WATT; //watt  Default exclusion region, will change later 
     m_exclusionRegionCollection.push_back (linkExclusionRegion);
     return linkExclusionRegion.currentExclusionRegion;
@@ -203,6 +205,86 @@ namespace ns3
   double ExclusionRegionHelper::WToDbm (double w)
   {
     return 10.0 * log10 (w * 1000.0);
+  }
+
+  void ExclusionRegionHelper::AddOrUpdateExclusionRegion (LinkExclusionRegion item)
+  {
+
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      if ( it->sender == item.sender && it->receiver == item.receiver)
+      {
+        // first condition, normal comparison without overflow
+        // second condition, overflow, it->version should be greater than 200, while version should be close to 0.
+        if ( it->version < item.version || it->version - item.version > 100)
+        {
+          m_exclusionRegionCollection.erase (it);
+          break;
+        }
+        else
+        {
+          return;
+        }
+      }
+    }
+    //no record exist regarding this link (sender ==> receiver);
+    m_exclusionRegionCollection.insert ( m_exclusionRegionCollection.begin (), item);
+    return;
+  }
+
+  std::vector<LinkExclusionRegion> ExclusionRegionHelper::GetLatestUpdatedItems (uint32_t count, SignalMap signalMap)
+  {
+    std::vector<LinkExclusionRegion> vec;
+    uint32_t i = 0;
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      for (SignalMap::Iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
+      {
+        //Check signal map, if the current node is in the receiver's exclusion region, the current node 
+        //forward the receiver's exclusion region information. _it->from should be the receiver in order 
+        //to locate the signal map record
+        if ( _it->from == it->receiver )
+        {
+          double interferenceW = DbmToW (DEFAULT_POWER + TX_GAIN - _it->attenuation);
+          // interferenceW is the supposed intereference if the current node transmits. if this value is
+          // greater  or equal to the receiver's current exclusion region, the current node is in the 
+          // receiver's exclusion region.
+          if ( interferenceW >= it->currentExclusionRegion)
+          {
+            // we share such information with others.
+            vec.push_back (*it);
+            i ++;
+            // if the maximum count is reached, break;
+            if ( i == count)
+            {
+              break;
+            }
+          }
+        }
+      }
+
+      // again, this is for breaking the loop.
+      if ( i == count)
+      {
+        break;
+      }
+    }
+    return vec;
+  }
+
+  double ExclusionRegionHelper::GetExclusionRegion (uint16_t sender, uint16_t receiver)
+  {
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      if (it->sender == sender && it->receiver == receiver)
+      {
+        return it->currentExclusionRegion;
+      }
+    }
+    return DEFAULT_EXCLUSION_REGION_WATT;
   }
 
 }

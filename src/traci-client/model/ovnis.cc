@@ -470,7 +470,7 @@ namespace ns3
 
     if (currentTime < (stopTime*1000))
     {
-      Simulator::Schedule(Seconds(1), &Ovnis::trafficSimulationStep, this);
+      Simulator::Schedule(MilliSeconds(2*SLOT_LENGTH), &Ovnis::trafficSimulationStep, this);
     }
     else
     {

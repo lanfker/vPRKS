@@ -1004,57 +1004,21 @@ namespace ns3 {
           uint16_t nodeId = buff.ReadU16 ();
           int64_t sendingSlot = (int64_t)buff.ReadU64 ();
           UpdateSendingStatus (nodeId, sendingSlot);
+          //std::cout<<m_self.GetNodeId () <<" node: "<< nodeId << " slot: "<< sendingSlot <<" from: "<< hdr.GetAddr2 ().GetNodeId () << std::endl;
+        }
+        size = buff.ReadU8 (); // exclusion region count
+        for (uint8_t i = 0; i < size; ++ i)
+        {
+          LinkExclusionRegion item;
+          item.sender = buff.ReadU16 ();
+          item.receiver = buff.ReadU16 ();
+          item.currentExclusionRegion = buff.ReadDouble ();
+          item.version = buff.ReadU8 ();
+          //std::cout<<m_self.GetNodeId () <<" sender: " << item.sender <<" receiver: "<< item.receiver <<" exclusion: "<< item.currentExclusionRegion<<" version: "<< (uint32_t)item.version << std::endl;
+          m_exclusionRegionHelper.AddOrUpdateExclusionRegion (item);
         }
         //m_signalMap.SortAccordingToInComingAttenuation ();
         //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
-
-        /*
-        uint16_t itemCount = buff.ReadU16 ();
-        std::vector<ObservationItem> tempVec;
-        //std::cout<<" receive_count: "<< itemCount<< std::endl;
-        for (uint16_t i = 0; i < itemCount; ++ i)
-        {
-          ObservationItem temp;
-          temp.sender = buff.ReadU16 ();
-          temp.receiver = buff.ReadU16 ();
-          temp.senderX = buff.ReadDouble ();
-          temp.senderY = buff.ReadDouble ();
-          temp.receiverX = buff.ReadDouble ();
-          temp.receiverY = buff.ReadDouble ();
-          temp.averageAttenuation = buff.ReadDouble ();
-          temp.timeStamp = Simulator::Now ();
-          //std::cout<<"sender: "<<temp.sender <<" receiver: "<< temp.receiver <<" senderX: "<< temp.senderX << " senderY: "<< temp.senderY <<" receiverX: "<< temp.receiverX <<" receiverY: "<< temp.receiverY<<" averageAtten: "<< temp.averageAttenuation << std::endl;
-          m_observation.AppendObservation (temp.sender, temp.receiver, temp);
-        }
-      */
-        //std::cout<<"AT vehicle: "<<m_self.GetNodeId ()<< std::endl;
-        //m_observation.PrintObservations ();
-        /*
-           std::vector<SignalMapItem> _vec;
-           for (uint16_t i = 0; i < itemCount; ++ i)
-           {
-           SignalMapItem temp; 
-           temp.from = buff.ReadU16 ();
-           temp.to = buff.ReadU16 ();
-           temp.attenuation = buff.ReadU16 () / (double) DBM_AMPLIFY_TIMES;
-           temp.angle = (int16_t)buff.ReadU16 ();
-           temp.begin = buff.ReadU16 ();
-           temp.end = buff.ReadU16 ();
-           temp.exclusionRegion = buff.ReadU16 () / (double) DBM_AMPLIFY_TIMES;
-           temp.timeStamp = Simulator::Now ();
-           _vec.push_back (temp);
-           }
-           for (std::vector<SignalMapItem>::iterator it = _vec.begin (); it != _vec.end (); ++ it)
-           {
-           bool createNew = IsNeighborSignalMapExisted (it->to);
-           if ( createNew == false )
-           {
-           CreateNeighborSignalMapRecord (it->to);
-           }
-
-           UpdateNeighborSignalMapRecord (*it);
-           }
-           */
         delete [] temp;
 
         //---------------------------------------------
@@ -1733,24 +1697,23 @@ rxPacket:
       {
         buff.WriteU16 (vec[i].nodeId);
         buff.WriteU64 (vec[i].sendingSlot);
+        //std::cout<<m_self.GetNodeId () <<" nodeId: "<< vec[i].nodeId << " slot: "<< vec[i].sendingSlot << std::endl;
       }
-
-      //std::cout<<" used bytes: "<< buff.GetNumberOfUsedBytes () << std::endl;  50 bytes or 49 bytes
-      //=========================Vehicle Density distribution
-      /*
-      std::vector<RoadVehicleItem> directionDistribution =  m_signalMap.ComputeVehicleDirectionDistribution ();
-      uint32_t count=0, totalBytes = 0;
+      //=================Share Exclusion Region Information=====================
       uint32_t remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
-
-      std::vector<RoadVehicleItem> vec = CalculateLengthForDensityShare (directionDistribution, count, remainBytes, totalBytes);
-      buff.WriteU8 ((uint8_t)count); // # of density estimation
-      for (uint32_t i = 0; i < count; ++ i)
+      uint32_t count = (remainBytes-1)/13;
+      std::vector<LinkExclusionRegion> linkExclusionRegionVec = m_exclusionRegionHelper.GetLatestUpdatedItems (count, m_signalMap);
+      buff.WriteU8 ((uint8_t) linkExclusionRegionVec.size ());
+      for (uint32_t i = 0; i < linkExclusionRegionVec.size (); ++ i)
       {
-        buff.WriteU8 ((uint8_t)vec[i].edge.edgeId.size()); // edge id length
-        buff.WriteString (vec[i].edge.edgeId);
-        buff.WriteDouble (vec[i].density);
+        buff.WriteU16 (linkExclusionRegionVec[i].sender);
+        buff.WriteU16 (linkExclusionRegionVec[i].receiver);
+        buff.WriteDouble (linkExclusionRegionVec[i].currentExclusionRegion);
+        buff.WriteU8 (linkExclusionRegionVec[i].version);
+        //std::cout<<m_self.GetNodeId ()<<" writing sender: "<< linkExclusionRegionVec[i].sender<<" receiver: "<<linkExclusionRegionVec[i].receiver <<" exclusion: "<< linkExclusionRegionVec[i].currentExclusionRegion <<" version: "<< (uint32_t) linkExclusionRegionVec[i].version << std::endl;
       }
-      */
+
+
 
       //Updating Node Status============
       NodeStatus status;
@@ -1763,65 +1726,6 @@ rxPacket:
       Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
       //Simulator::PrintNodeStatus (m_self.GetNodeId ());
 
-      //=============================Share observations===========================================
-      /*
-      remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
-      m_observation.RemoveExpireItems (Seconds(OBSERVATION_EXPIRATION_TIME), MAX_OBSERVATION_ITEMS_PER_LINK);
-      std::vector<ObservationItem> vec = m_observation.FetchLinkObservationByReceiver (m_self.GetNodeId ());
-      if ( remainBytes > 2)
-      {
-        remainBytes -= 2;
-        uint32_t itemCount = remainBytes / (sizeof (double)*5 + 4);
-        if ( itemCount > vec.size ())
-        {
-          buff.WriteU16( (uint16_t) vec.size ());
-          itemCount = vec.size ();
-        }
-        else if ( itemCount <= vec.size ())
-        {
-          buff.WriteU16 ((uint16_t)itemCount);
-        }
-
-        //std::cout<<" send_count: "<< itemCount<< std::endl;
-        for (int i = 0; i < itemCount; ++ i)
-        {
-          buff.WriteU16 (vec[i].sender);
-          buff.WriteU16 (vec[i].receiver);
-          buff.WriteDouble (vec[i].senderX);
-          buff.WriteDouble (vec[i].senderY);
-          buff.WriteDouble (vec[i].receiverX);
-          buff.WriteDouble (vec[i].receiverY);
-          buff.WriteDouble (vec[i].averageAttenuation);
-        }
-      }
-      */
-      //==================================Share Signal Map===================================
-      /*
-         remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
-         std::vector<SignalMapItem> _vec;
-         uint16_t itemCount = 0;
-         if (remainBytes > 2)
-         {
-         remainBytes -= 2;
-         itemCount = remainBytes / SIGNAL_MAP_ITEM_SIZE;
-      //std::cout<<" itemCount: "<< itemCount << std::endl;
-      // everything is in the _vec vector;
-      m_signalMap.GetItemsToShare (_vec, itemCount);
-      buff.WriteU16 ((uint16_t) _vec.size ()); // size;
-      for (uint16_t i = 0; i < _vec.size (); ++ i)
-      {
-      buff.WriteU16 (_vec[i].from);
-      buff.WriteU16 (_vec[i].to);
-      buff.WriteU16 ( (uint16_t)(_vec[i].attenuation * DBM_AMPLIFY_TIMES));
-      buff.WriteU16 ((uint16_t)_vec[i].angle);
-      buff.WriteU16 (_vec[i].begin);
-      buff.WriteU16 (_vec[i].end);
-      buff.WriteU16 ((uint16_t)(_vec[i].exclusionRegion) * DBM_AMPLIFY_TIMES );
-
-      //std::cout<<" sending, from: "<< _vec[i].from<<" to: "<< _vec[i].to <<" attenuation: "<< _vec[i].attenuation <<" angle: "<< _vec[i].angle <<" begin: "<< _vec[i].begin <<" end: "<< _vec[i].end <<" exlusion_region: "<< _vec[i].exclusionRegion<< std::endl;
-      }
-      }
-      */
 
       m_currentPacket = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
       //-----------------------------------------------------------
@@ -2577,6 +2481,15 @@ rxPacket:
     for (std::vector<uint16_t>::iterator it = receivers.begin (); it != receivers.end (); ++ it)
     {
       std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (*it); // get receiver signal map
+
+      double exclusionRegion = m_exclusionRegionHelper.GetExclusionRegion (sender, *it);
+      std::vector<uint16_t> nodesInExclusionRegion;
+      GetNodesInExclusionRegion ( *it, exclusionRegion, nodesInExclusionRegion); // find out who are in Exclusion Region
+      if ( find (nodesInExclusionRegion.begin (), nodesInExclusionRegion.end (), neighbor) != nodesInExclusionRegion.end ())
+      {
+        return true;
+      }
+      /*
       for (std::vector<SignalMapItem>::iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
       {
         if ( _it->from == sender && _it->to == *it)
@@ -2591,6 +2504,7 @@ rxPacket:
           }
         }
       }
+      */
     }
   }
 
