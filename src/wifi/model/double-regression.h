@@ -8,6 +8,7 @@
 #include "ns3/core-module.h"
 #include "matrix.h"
 #include "observation.h"
+#include "exclusion-region-helper.h"
 
 
 namespace ns3{
@@ -22,8 +23,10 @@ namespace ns3{
       ~DoubleRegression ();
       void Initialize (Observation obs, Matrix &phi, Matrix &pathLoss);
       void Initialize (std::vector<ObservationItem> vec, Matrix &phi, Matrix &pathLoss, bool senderCoordinates);
+      void Initialize (std::vector<ParameterObservation> vec, Matrix &phi, Matrix &pathLoss, bool senderCoordinates);
       bool GetCoefficientBeta (Matrix &betaMatrix, Matrix &phi, Matrix &pathLoss);
       double AttenuationEstimation (uint16_t sender, uint16_t receiver, double senderX, double senderY, double receiverX, double receiverY, Observation obs);
+      double ParameterEstimation (uint16_t sender, uint16_t receiver, double senderX, double senderY, double receiverX, double receiverY, ExclusionRegionHelper ers);
     private:
   };
 }

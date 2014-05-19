@@ -5,6 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <set>
 #include "signal-map.h"
 #include "ns3/settings.h"
 
@@ -33,7 +34,7 @@ namespace ns3
 
   // do we need the return value?
   double ExclusionRegionHelper::AdaptExclusionRegion (SignalMap signalMap,  double deltaInterference,
-      uint16_t sender, uint16_t receiver, double txPower, double backgroundInterferenceW, double ewmaPdr)
+      LinkExclusionRegion item, double txPower, double backgroundInterferenceW, double ewmaPdr)
   {
 
     //std::cout<<" m_exclusionRegionCollection.size (): "<< m_exclusionRegionCollection.size ()<< std::endl;
@@ -42,7 +43,7 @@ namespace ns3
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)
     {
-      if ( it->sender == sender && it->receiver == receiver)
+      if ( it->sender == item.sender && it->receiver == item.receiver)
       {
         it->version ++;
         //Change deltaInterference(dB) into deltaInterference(Watt)
@@ -175,13 +176,8 @@ namespace ns3
       }
       //return it->currentExclusionRegion;
     }
-    LinkExclusionRegion linkExclusionRegion;
-    linkExclusionRegion.sender = sender;
-    linkExclusionRegion.receiver = receiver;
-    linkExclusionRegion.version = 0;
-    linkExclusionRegion.currentExclusionRegion = DEFAULT_EXCLUSION_REGION_WATT; //watt  Default exclusion region, will change later 
-    m_exclusionRegionCollection.push_back (linkExclusionRegion);
-    return linkExclusionRegion.currentExclusionRegion;
+    m_exclusionRegionCollection.push_back (item);
+    return item.currentExclusionRegion;
     /*
     signalMap.SortAccordingToAttenuation ();
     for (SignalMap::Iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
@@ -219,6 +215,7 @@ namespace ns3
         // second condition, overflow, it->version should be greater than 200, while version should be close to 0.
         if ( it->version < item.version || it->version - item.version > 100)
         {
+          item.distance = it->distance;
           m_exclusionRegionCollection.erase (it);
           break;
         }
@@ -287,4 +284,80 @@ namespace ns3
     return DEFAULT_EXCLUSION_REGION_WATT;
   }
 
+  LinkExclusionRegion ExclusionRegionHelper::GetExclusionRegionRecord (uint16_t sender, uint16_t receiver)
+  {
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      if (it->sender == sender && it->receiver == receiver)
+      {
+        return *it;
+      }
+    }
+    //if not found
+    LinkExclusionRegion item;
+    item.sender = 0;
+    item.receiver = 0;
+    return item;
+  }
+
+  std::set<uint16_t> ExclusionRegionHelper::GetSenders ()
+  {
+    std::set<uint16_t> vec;
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      vec.insert (it->sender);
+    }
+    return vec;
+  }
+
+
+  std::vector<ParameterObservation> ExclusionRegionHelper::GetObservationsBySender (uint16_t sender, double senderX, double senderY, double receiverX, double receiverY)
+  {
+    std::vector<ParameterObservation> vec;
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      double x = 0, y = 0;
+      if ( it->sender == sender)
+      {
+        x = it->senderX;
+        y = it->senderY;
+      }
+
+      for (std::vector<LinkExclusionRegion>::iterator _it = m_exclusionRegionCollection.begin (); 
+          _it != m_exclusionRegionCollection.end (); ++ _it)
+      {
+        if ( _it->sender == sender)
+        {
+          double senderXDifference = x - _it->senderX;
+          double senderYDifference = y - _it->senderY;
+          double dt = sqrt ( pow (senderX - _it->senderX, 2) + pow (senderY - _it->senderY, 2));
+          double dr = sqrt ( pow (receiverX - _it->receiverX, 2) + pow (receiverY - _it->receiverY, 2));
+          double dist = sqrt (dt*dt + dr*dr);
+          if ( dist <= LINK_DISTANCE_THRESHOLD)
+          {
+            ParameterObservation obs;
+            obs.sender = _it->sender;
+            obs.receiver = _it->receiver;
+            obs.parameter = _it->currentExclusionRegion;
+            obs.senderX = _it->senderX + senderXDifference;
+            obs.senderY = _it->senderY + senderYDifference;
+            obs.receiverX = _it->receiverX + senderXDifference;
+            obs.receiverY = _it->receiverY + senderYDifference;
+            vec.push_back (obs);
+          }
+        }
+      }
+      if ( vec.size () >= 3)
+        return vec;
+      else
+      {
+        vec.clear ();
+        continue;
+      }
+    }
+    return vec;
+  }
 }

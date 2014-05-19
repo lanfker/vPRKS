@@ -49,6 +49,7 @@ namespace ns3
     m_observations.push_back (linkObservations);
   }
 
+
   uint32_t Observation::FindMinimumObservationLength ()
   {
     uint32_t min = 10000;

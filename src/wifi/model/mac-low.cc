@@ -1014,6 +1014,10 @@ namespace ns3 {
           item.receiver = buff.ReadU16 ();
           item.currentExclusionRegion = buff.ReadDouble ();
           item.version = buff.ReadU8 ();
+          item.senderX = buff.ReadDouble ();
+          item.senderY = buff.ReadDouble ();
+          item.receiverX = buff.ReadDouble ();
+          item.receiverY = buff.ReadDouble ();
           //std::cout<<m_self.GetNodeId () <<" sender: " << item.sender <<" receiver: "<< item.receiver <<" exclusion: "<< item.currentExclusionRegion<<" version: "<< (uint32_t)item.version << std::endl;
           m_exclusionRegionHelper.AddOrUpdateExclusionRegion (item);
         }
@@ -1041,6 +1045,30 @@ namespace ns3 {
               LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
               if ( _item.sender != 0 && _item.receiver != 0)
               {
+                LinkExclusionRegion linkExclusionRegionRecord = m_exclusionRegionHelper.GetExclusionRegionRecord (sender, receiver);
+                if ( linkExclusionRegionRecord.sender == 0 && linkExclusionRegionRecord.receiver == 0)
+                {
+                  linkExclusionRegionRecord.sender = sender;
+                  linkExclusionRegionRecord.receiver = receiver;
+                  linkExclusionRegionRecord.distance = linkDistance;
+                  linkExclusionRegionRecord.version = 0;
+                  linkExclusionRegionRecord.senderX = x;
+                  linkExclusionRegionRecord.senderY = y;
+                  linkExclusionRegionRecord.receiverX = m_positionX;
+                  linkExclusionRegionRecord.receiverY = m_positionY;
+                  linkExclusionRegionRecord.currentExclusionRegion = DEFAULT_EXCLUSION_REGION_WATT;
+                }
+                //Check distance, if displacement is greater than average displacement, use estimated exclusion region value.
+                double displacement = linkDistance - linkExclusionRegionRecord.distance;
+                linkExclusionRegionRecord.distance = linkDistance;
+                m_exclusionRegionHelper.AddOrUpdateExclusionRegion (linkExclusionRegionRecord);
+                if ( _item.estimationCount > 20 && displacement > 10)
+                {
+
+                  DoubleRegression doubleRegression;
+                  double estimatedExclusionRegion = doubleRegression.ParameterEstimation (sender, receiver, x, y, m_positionX, m_positionY, m_exclusionRegionHelper);
+                  std::cout<<" estimated exclusion region: "<< estimatedExclusionRegion << std::endl;
+                }
                 bool conditionTwoMeet = false;
                 double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
                 std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr <<" link length: "<<linkDistance << " estimationCount: "<< _item.estimationCount<< std::endl;
@@ -1048,7 +1076,7 @@ namespace ns3 {
                 std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
                 SignalMap signalMap = SignalMap (signalMapVec);
                 double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
-                double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, sender, receiver, DEFAULT_POWER, interferenceW, _item.ewmaPdr);
+                double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, linkExclusionRegionRecord, DEFAULT_POWER, interferenceW, _item.ewmaPdr);
                 m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
                 Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
                 std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
@@ -1701,7 +1729,7 @@ rxPacket:
       }
       //=================Share Exclusion Region Information=====================
       uint32_t remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
-      uint32_t count = (remainBytes-1)/13;
+      uint32_t count = (remainBytes-1)/(13+32);
       std::vector<LinkExclusionRegion> linkExclusionRegionVec = m_exclusionRegionHelper.GetLatestUpdatedItems (count, m_signalMap);
       buff.WriteU8 ((uint8_t) linkExclusionRegionVec.size ());
       for (uint32_t i = 0; i < linkExclusionRegionVec.size (); ++ i)
@@ -1710,6 +1738,10 @@ rxPacket:
         buff.WriteU16 (linkExclusionRegionVec[i].receiver);
         buff.WriteDouble (linkExclusionRegionVec[i].currentExclusionRegion);
         buff.WriteU8 (linkExclusionRegionVec[i].version);
+        buff.WriteDouble (linkExclusionRegionVec[i].senderX);
+        buff.WriteDouble (linkExclusionRegionVec[i].senderY);
+        buff.WriteDouble (linkExclusionRegionVec[i].receiverX);
+        buff.WriteDouble (linkExclusionRegionVec[i].receiverY);
         //std::cout<<m_self.GetNodeId ()<<" writing sender: "<< linkExclusionRegionVec[i].sender<<" receiver: "<<linkExclusionRegionVec[i].receiver <<" exclusion: "<< linkExclusionRegionVec[i].currentExclusionRegion <<" version: "<< (uint32_t) linkExclusionRegionVec[i].version << std::endl;
       }
 
