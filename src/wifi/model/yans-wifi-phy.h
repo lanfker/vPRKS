@@ -26,6 +26,7 @@
 #include "ns3/event-id.h"
 #include "ns3/packet.h"
 #include "ns3/object.h"
+#include "ns3/mac48-address.h"
 #include "ns3/traced-callback.h"
 #include "ns3/nstime.h"
 #include "ns3/ptr.h"
@@ -145,6 +146,8 @@ public:
   double ComputeInterferenceWhenReceivingData ();
 
   double GetPowerDbm (uint8_t power) const;
+
+  double SetAddress (Mac48Address ad);
 private:
   YansWifiPhy (const YansWifiPhy &o);
   virtual void DoDispose (void);
@@ -171,6 +174,7 @@ private:
   double   m_txPowerBaseDbm;
   double   m_txPowerEndDbm;
   uint32_t m_nTxPower;
+  Mac48Address m_self;
 
   Ptr<YansWifiChannel> m_channel;
   uint16_t m_channelNumber;

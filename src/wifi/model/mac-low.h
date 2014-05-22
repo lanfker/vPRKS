@@ -557,6 +557,8 @@ public:
   void SortSendingSlot ();
   std::vector<NodeSendingStatus> GetFirstTwoNodeSendingSlot (int64_t currentSlot);
 
+  void PrintAddress ();
+
 private:
   //-----------------------------------VPRKS----------------------
   uint16_t m_sequenceNumber;
@@ -707,6 +709,7 @@ private:
   EventId m_sendDataEvent;
   EventId m_waitSifsEvent;
   EventId m_navCounterResetCtsMissed;
+  EventId m_setChannelEvent;
 
   Ptr<Packet> m_currentPacket;
   WifiMacHeader m_currentHdr;

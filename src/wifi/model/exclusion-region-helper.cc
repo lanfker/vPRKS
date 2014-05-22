@@ -234,6 +234,25 @@ namespace ns3
   {
     std::vector<LinkExclusionRegion> vec;
     uint32_t i = 0;
+
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      //signal_map->to is the current node. 
+      //If for an exclusion region record, its receiver is equal to the current node, we share this 
+      //exclusion region record with higher priority. This is so that every vehicle has the opportunity 
+      //to share its own exclusion region information.
+      //????? After share a record, do we have to put the record at the end of the vector???
+      if ( it->receiver == signalMap.begin ()->to  && i != count)
+      {
+        vec.push_back (*it);
+        i ++;
+      }
+    }
+    if ( i == count)
+    {
+      return vec;
+    }
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)
     {
@@ -248,7 +267,7 @@ namespace ns3
           // interferenceW is the supposed intereference if the current node transmits. if this value is
           // greater  or equal to the receiver's current exclusion region, the current node is in the 
           // receiver's exclusion region.
-          if ( interferenceW >= it->currentExclusionRegion)
+          if ( interferenceW >= it->currentExclusionRegion || interferenceW >= DbmToW (LINK_SELECTION_THRESHOLD))
           {
             // we share such information with others.
             vec.push_back (*it);
@@ -316,9 +335,11 @@ namespace ns3
   std::vector<ParameterObservation> ExclusionRegionHelper::GetObservationsBySender (uint16_t sender, double senderX, double senderY, double receiverX, double receiverY)
   {
     std::vector<ParameterObservation> vec;
+    std::cout<<" in get observation by sender, size: "<< m_exclusionRegionCollection.size () << std::endl;
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)
     {
+      //std::cout<<" it->sender: "<< it->sender <<" sender: "<< sender << std::endl;
       double x = 0, y = 0;
       if ( it->sender == sender)
       {
@@ -346,6 +367,9 @@ namespace ns3
             obs.senderY = _it->senderY + senderYDifference;
             obs.receiverX = _it->receiverX + senderXDifference;
             obs.receiverY = _it->receiverY + senderYDifference;
+            double linkDistance = sqrt ( pow (obs.senderX-obs.receiverX, 2) + pow (obs.senderY - obs.receiverY, 2));
+            obs.receiverX = obs.receiverX - m_random.GetValue (0, 5);
+            obs.receiverY = obs.senderY - sqrt (pow (linkDistance, 2) - pow (obs.senderX - obs.receiverX, 2));
             vec.push_back (obs);
           }
         }

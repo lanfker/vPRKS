@@ -148,6 +148,8 @@ DcaTxop::DoDispose (void)
   NS_LOG_FUNCTION (this);
   std::cout<<m_low->GetAddress () <<" " << Simulator::Now () << " do dispose "<< std::endl;
   m_queue = 0;
+  m_low->SetAddress (Mac48Address ("00:00:00:00:00:00"));
+  //m_low->Dispose ();
   m_low = 0;
   m_stationManager = 0;
   delete m_transmissionListener;

@@ -124,12 +124,15 @@ FlushStreams (void)
   std::list<std::ostream*> *l = *pl;
 
   /* Need to do it this way in case any of the ostream* causes SIGSEGV */
-  while (!l->empty ())
+  if ( l != NULL)
+  {
+    while (!l->empty ())
     {
       std::ostream* s (l->front ());
       l->pop_front ();
       s->flush ();
     }
+  }
 
   /* Restore default SIGSEGV handler (Not that it matters anyway) */
   hdl.sa_handler=SIG_DFL;

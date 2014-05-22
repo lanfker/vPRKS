@@ -23,6 +23,7 @@ namespace ns3{
       bool SetValue (uint32_t i, uint32_t j, double value);
       bool GetValue (uint32_t i, uint32_t j, double &value);
       double GetValue (uint32_t i, uint32_t j);
+      double GetDeterminant ();
       bool Inverse (Matrix &inverseMatrix);
       void InitiateExpandMatrix (Matrix &sourceMatrix, Matrix &expandMatrix);
       bool AdjustMatrix ();

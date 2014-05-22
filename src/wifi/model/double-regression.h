@@ -27,6 +27,9 @@ namespace ns3{
       bool GetCoefficientBeta (Matrix &betaMatrix, Matrix &phi, Matrix &pathLoss);
       double AttenuationEstimation (uint16_t sender, uint16_t receiver, double senderX, double senderY, double receiverX, double receiverY, Observation obs);
       double ParameterEstimation (uint16_t sender, uint16_t receiver, double senderX, double senderY, double receiverX, double receiverY, ExclusionRegionHelper ers);
+  double DbmToW (double dBm);
+
+  double WToDbm (double w);
     private:
   };
 }

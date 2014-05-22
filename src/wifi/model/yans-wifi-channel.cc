@@ -83,6 +83,8 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const Packet> packet, double
   uint32_t j = 0;
   for (PhyList::const_iterator i = m_phyList.begin (); i != m_phyList.end (); i++, j++)
     {
+      if (*i == 0)
+        continue;
       if (sender != (*i))
         {
           // For now don't account for inter channel interference
@@ -144,6 +146,7 @@ void YansWifiChannel::Remove (Ptr<YansWifiPhy> ywp)
   if (i != m_phyList.end ())
   {
     m_phyList.erase (i);
+    *i = 0;
   }
 }
 

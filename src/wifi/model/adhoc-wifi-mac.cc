@@ -203,4 +203,13 @@ void AdhocWifiMac::SetPosition (double x, double y)
   m_low -> SetPosition (x, y);
 }
 
+void AdhocWifiMac::PrintAddress ()
+{
+  m_low -> PrintAddress ();
+}
+
+void AdhocWifiMac::ClearMacLow ()
+{
+  m_low = 0;
+}
 } // namespace ns3

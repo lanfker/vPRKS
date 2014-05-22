@@ -59,6 +59,7 @@ namespace ns3{
 
     private:
       std::vector<LinkExclusionRegion> m_exclusionRegionCollection;
+      UniformVariable m_random;
   };
 }
 

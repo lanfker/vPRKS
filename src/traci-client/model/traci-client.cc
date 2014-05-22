@@ -2,6 +2,7 @@
 
 
 #include "traci-client.h"
+#include <exception>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -1524,6 +1525,8 @@ TraciClient::check_resultState(tcpip::Storage& inMsg, int command, bool ignoreCo
 void
 TraciClient::check_commandGetResult(tcpip::Storage& inMsg, int command, int expectedType, bool ignoreCommandId)
 {
+  try
+  {
     inMsg.position(); // respStart
     int length = inMsg.readUnsignedByte();
     if (length == 0) {
@@ -1539,6 +1542,11 @@ TraciClient::check_commandGetResult(tcpip::Storage& inMsg, int command, int expe
             throw tcpip::SocketException("Expected " + toString(expectedType) + " but got " + toString(valueDataType));
         }
     }
+  }
+  catch (exception& e)
+  {
+    return;
+  }
 }
 
 

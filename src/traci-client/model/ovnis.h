@@ -120,6 +120,8 @@ namespace ns3
     long
     getCurrentTime();
 
+    bool IsSlotUpdated ();
+
   protected:
 
     virtual void
@@ -141,7 +143,7 @@ namespace ns3
     CreateNetworkDevices(NodeContainer node_container);
 
     void
-    DestroyNetworkDevices(NodeContainer to_destroy);
+    DestroyNetworkDevices();
 
     void
     trafficSimulationStep();
@@ -258,6 +260,8 @@ namespace ns3
      */
     double communicationRange;
     double boundaries[2];
+    uint64_t m_slot;
+    std::vector<Ptr<Node> > m_toDestroy;
 
     /**
      * Do we start SUMO?

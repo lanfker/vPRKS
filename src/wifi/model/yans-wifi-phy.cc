@@ -26,6 +26,7 @@
 #include "error-rate-model.h"
 #include "ns3/simulator.h"
 #include "ns3/packet.h"
+#include "ns3/mac48-address.h"
 #include "ns3/random-variable.h"
 #include "ns3/assert.h"
 #include "ns3/log.h"
@@ -737,6 +738,7 @@ maybeCcaBusy:
   bool
     YansWifiPhy::IsStateRx (void)
     {
+      //std::cout<<" m_state: "<< m_state << std::endl;
       return m_state->IsStateRx ();
     }
   bool
@@ -821,20 +823,24 @@ maybeCcaBusy:
     YansWifiPhy::EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> event)
     {
       NS_LOG_FUNCTION (this << packet << event);
-      NS_ASSERT (IsStateRx ());
+      if ( m_self.GetNodeId () == 0)
+      {
+        //std::cout<<" address is receiving " << m_self.GetNodeId () <<" m_self is: "<< m_self<< std::endl;
+        return;
+      }
+      //std::cout<<" is receiving" << std::endl;
+      //NS_ASSERT (IsStateRx ());
       NS_ASSERT (event->GetEndTime () == Simulator::Now ());
 
-      /*
-      double currentSlot = Simulator::Now ().GetNanoSeconds () / (SLOT_LENGTH * 1000);
-      Time next = MicroSeconds ((currentSlot + 1) * 1500);
-      std::cout<<Simulator::Now () <<" end receive, still got "<< next - Simulator::Now () <<" before slot ends" <<std::endl;
-      */
 
       struct InterferenceHelper::SnrPer snrPer;
       snrPer = m_interference.CalculateSnrPer (event);
       m_interference.NotifyRxEnd ();
 
-      if (Simulator::Now () > Seconds (START_PROCESS_TIME) && GetChannelNumber () == DATA_CHANNEL)
+      //std::cout<<" m_self: "<< m_self.GetNodeId () << " this "<< this<< std::endl;
+      //std::cout<< " channel: "<< m_channelNumber << std::endl; 
+
+      if (Simulator::Now () > Seconds (START_PROCESS_TIME) && m_channelNumber == DATA_CHANNEL)
       {
         m_interference.NotifyDataEndReceiving ();
       }
@@ -854,6 +860,7 @@ maybeCcaBusy:
       }
       else
       {
+        //std::cout<<" packet reception failure" << std::endl;
         /* failure. */
         NotifyRxDrop (packet);
         m_state->SwitchFromRxEndError (packet, snrPer.snr);
@@ -868,5 +875,10 @@ maybeCcaBusy:
   double YansWifiPhy::ComputeInterferenceWhenReceivingData ()
   {
     return m_interference.ComputeInterferenceWhenReceivingData ();
+  }
+  double YansWifiPhy::SetAddress (Mac48Address ad)
+  {
+    m_self = ad;
+    //std::cout<<" in set address: "<< ad <<" m_self: "<< m_self << std::endl;
   }
 } // namespace ns3

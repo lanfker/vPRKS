@@ -190,7 +190,7 @@ namespace ns3
         }
       }
     }
-    //expandMatrix.ShowMatrix ();
+    expandMatrix.ShowMatrix ();
   }
 
 
@@ -222,6 +222,7 @@ namespace ns3
           double targetValue;
           GetValue (m, n, targetValue);
           //std::cout<<" target_value: "<< targetValue <<" value: "<< value <<" times: "<< times;
+          //std::cout<<" timedvalue: "<< value * times <<" final: "<<  targetValue - value * times;
           double final= targetValue - value * times;
           //std::cout<<" final: "<< final << std::endl;
 
@@ -260,7 +261,7 @@ namespace ns3
         GetValue (i,j,value);
         std::cout<<"\t"<<value;
       }
-      std::cout<<std::endl;
+      std::cout<<";";
     }
     std::cout<<std::endl;
   }
@@ -309,5 +310,12 @@ namespace ns3
   void Matrix::ShowShape ()
   {
     std::cout<<"Row: "<<_m<<" Column: "<< _n<< std::endl;
+  }
+
+  // only work for 3x3 matrix
+  double Matrix::GetDeterminant ()
+  {
+    double det = GetValue(0,0) * (GetValue (1,1) * GetValue (2,2) - GetValue (1,2) * GetValue (2,1)) - GetValue (0, 1) * ( GetValue (1,0) * GetValue (2,2) - GetValue (1,2) * GetValue (2,0)) + GetValue (0,2) * (GetValue (1,0) * GetValue (2,1) - GetValue (1,1) * GetValue (2,0));
+    return det;
   }
 }

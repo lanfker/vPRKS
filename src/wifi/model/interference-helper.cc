@@ -237,7 +237,9 @@ double
 InterferenceHelper::CalculateNoiseInterferenceW (Ptr<InterferenceHelper::Event> event, NiChanges *ni) const
 {
   double noiseInterference = m_firstPower;
-  NS_ASSERT (m_rxing);
+  //NS_ASSERT (m_rxing);
+  if ( m_rxing == false)
+    return noiseInterference;
   for (NiChanges::const_iterator i = m_niChanges.begin () + 1; i != m_niChanges.end (); i++)
     {
       if ((event->GetEndTime () == i->GetTime ()) && event->GetRxPowerW () == -i->GetDelta ())
@@ -269,6 +271,12 @@ InterferenceHelper::CalculatePer (Ptr<const InterferenceHelper::Event> event, Ni
 {
   double psr = 1.0; /* Packet Success Rate */
   NiChanges::iterator j = ni->begin ();
+  // errorpacket
+  if ( &(*j) == 0)
+  {
+    //std::cout<<" &(*j) == 0" << std::endl;
+    return 1;
+  }
   Time previous = (*j).GetTime ();
   WifiMode payloadMode = event->GetPayloadMode ();
   WifiPreamble preamble = event->GetPreambleType ();

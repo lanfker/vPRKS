@@ -91,6 +91,7 @@ namespace ns3
   Ovnis::Ovnis() :
     runningVehicles(), in(), out(), loaded()
   {
+    m_slot = 0;
   }
 
   Ovnis::~Ovnis()
@@ -235,10 +236,10 @@ namespace ns3
   }
 
   void
-  Ovnis::DestroyNetworkDevices(NodeContainer to_destroy)
+  Ovnis::DestroyNetworkDevices()
   {
 
-    for (NodeContainer::Iterator i = to_destroy.Begin(); i != to_destroy.End(); ++i)
+    for (std::vector<Ptr<Node> >::iterator i = m_toDestroy.begin(); i != m_toDestroy.end(); ++i)
     {
 
       Ptr<Node> n = (*i);
@@ -264,14 +265,20 @@ namespace ns3
 #else
       Ptr<YansWifiPhy> ywp = DynamicCast<YansWifiPhy>(wp);
 #endif
+      ywp->Dispose ();
       channel->Remove(ywp);
+      //delete ywp;
 
       uint32_t number_of_device = n->GetNDevices ();
       for (uint32_t i = 0; i < number_of_device; ++ i)
       {
+        //Ptr<AdhocWifiMac> mac = n->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac ()->GetObject<AdhocWifiMac> ();
+        //mac->ClearMacLow ();
         n->GetDevice (i)->Dispose (); // distroy every net device that has been aggregated to the node.
+
       }
     }
+    m_toDestroy.clear ();
   }
 
   void
@@ -303,7 +310,7 @@ namespace ns3
     int j = 0;
     for (vector<string>::iterator i = in.begin(); i != in.end(); ++i)
     {
-      //std::cout<<Simulator::Now ()<<" vehicle "<< *i << " added "<< std::endl;
+      std::cout<<Simulator::Now ()<<" vehicle "<< *i << " added "<< std::endl;
       Names::Add("Nodes", (*i), node_container.Get(j));
       ++j;
     }
@@ -325,13 +332,14 @@ namespace ns3
     }
 
     // -------- set 'down' interfaces of terminated vehicles and remove nodes from the channel.
-    NodeContainer to_destroy;
+    //NodeContainer to_destroy;
     for (std::vector<std::string>::iterator i = out.begin(); i != out.end(); ++i)
     {
       Ptr<Node> n = Names::Find<Node>((*i));
-      to_destroy.Add(n);
+      m_toDestroy.push_back (n);
+      std::cout<<" add one in m_toDestroy: "<< *i << std::endl;
     }
-    DestroyNetworkDevices(to_destroy);
+    //DestroyNetworkDevices();
 
     // -------- update the set of running vehicles
 
@@ -458,9 +466,29 @@ namespace ns3
     //  globalStat("StepDuration",(double)(((tp.tv_sec*1000000000)+tp.tv_nsec) / 1000000.0));
     //  start=end;
 
+    //std::cout<<" checking if a new slot has come" << std::endl;
+    if ( IsSlotUpdated () == true)
+    {
+      DestroyNetworkDevices();
+    }
+
     // real loop until stop time
     traciClient->simulationStep(currentTime+1000, currentTime, in, out);
-    //std::cout<<"startTime*1000: "<< startTime*1000 <<" currentTime: "<< currentTime << std::endl;
+    //traciClient->simulationStep(Simulator::Now ().GetMilliSeconds (), currentTime, in, out);
+    //std::cout<<"simulator::now (): "<< Simulator::Now ().GetMilliSeconds () <<" currentTime: "<< currentTime << std::endl;
+    /*
+    for (std::vector<string>::iterator it = in.begin (); it != in.end (); ++ it )
+    {
+      std::cout<<" in: "<< *it ;
+    }
+    std::cout<<std::endl;
+
+    for (std::vector<string>::iterator it = out.begin (); it != out.end (); ++ it)
+    {
+      std::cout<<" out: "<< *it;
+    }
+    std::cout<<std::endl;
+    */
 
     // update running vehicles
     updateInOutVehicles();
@@ -470,7 +498,8 @@ namespace ns3
 
     if (currentTime < (stopTime*1000))
     {
-      Simulator::Schedule(MilliSeconds(2*SLOT_LENGTH), &Ovnis::trafficSimulationStep, this);
+      //Simulator::Schedule(MilliSeconds(SLOT_LENGTH), &Ovnis::trafficSimulationStep, this);
+      Simulator::Schedule(MilliSeconds(150), &Ovnis::trafficSimulationStep, this);
     }
     else
     {
@@ -552,7 +581,7 @@ namespace ns3
 
     if (currentTime < (stopTime*1000))
     {
-      Simulator::Schedule(Seconds(MOVE_INTERVAL), &Ovnis::move, this);
+      Simulator::Schedule(MilliSeconds(MOVE_INTERVAL), &Ovnis::move, this);
     }
   }
 
@@ -576,5 +605,20 @@ namespace ns3
   Ovnis::getCurrentTime()
   {
     return currentTime;
+  }
+
+  bool Ovnis::IsSlotUpdated ()
+  {
+
+    uint64_t slot = Simulator::Now ().GetNanoSeconds () / (SLOT_LENGTH * 1000);
+    if ( slot > m_slot)
+    {
+      m_slot = slot;
+      return true;
+    }
+    else
+    {
+      return false;
+    }
   }
 }

@@ -102,6 +102,8 @@ namespace ns3
     Ptr<Object> object = GetNode ();
     mobilityModel = object->GetObject<ConstantVelocityMobilityModel> ();
     m_name = Names::FindName (GetNode ());
+    //Ptr<AdhocWifiMac> mac = GetNode ()->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac ()->GetObject<AdhocWifiMac> ();
+    //mac->PrintAddress ();
 
     traciClient->commandGetVariableStringList(CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
     m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
@@ -131,11 +133,12 @@ namespace ns3
       return;
     }
     Ptr<AdhocWifiMac> mac = GetNode ()->GetDevice (DEFAULT_WIFI_DEVICE_INDEX)->GetObject<WifiNetDevice> ()->GetMac ()->GetObject<AdhocWifiMac> ();
-    
+   
     Mac48Address addr1 = Mac48Address::GetBroadcast ();
     
     //--------------------Get position and angle ---------------------------------
     traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, m_position);
+    //std::cout<<" positio: "<< m_position.x <<" "<< m_position.y << std::endl;
     traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, m_name, m_angle);
     mac->SetAngle (m_angle );
     mac->SetPosition (m_position.x, m_position.y);

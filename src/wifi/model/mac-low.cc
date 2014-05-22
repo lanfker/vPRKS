@@ -388,6 +388,7 @@ namespace ns3 {
     m_nextSendingSlot = 0;
     // Update slot number when it should be incremented
     Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::GetCurrentSlot, this);
+    //Simulator::Schedule (Seconds (50), &MacLow::PrintAddress, this);
     //Simulator::Schedule (Seconds (START_PROCESS_TIME), &MacLow::CalculateSchedule, this);
   }
 
@@ -493,6 +494,7 @@ namespace ns3 {
       m_phy->SetReceiveOkCallback (MakeCallback (&MacLow::ReceiveOk, this));
       m_phy->SetReceiveErrorCallback (MakeCallback (&MacLow::ReceiveError, this));
       SetupPhyMacLowListener (phy);
+      m_phy->GetObject<YansWifiPhy> () -> SetAddress (m_self);
 
       /*
       for (std::vector<RoadMapEdge>::iterator it = EdgeXmlParser::m_mapEdges.begin (); it != EdgeXmlParser::m_mapEdges.end (); ++ it)
@@ -511,6 +513,11 @@ namespace ns3 {
     MacLow::SetAddress (Mac48Address ad)
     {
       m_self = ad;
+      if ( ad.GetNodeId () == 0)
+      {
+        m_setChannelEvent.Cancel ();
+        m_phy = 0;
+      }
     }
   void
     MacLow::SetAckTimeout (Time ackTimeout)
@@ -695,7 +702,7 @@ namespace ns3 {
   void
     MacLow::ReceiveOk (Ptr<Packet> packet, double rxSnr, WifiMode txMode, WifiPreamble preamble)
     {
-      //std::cout<<"node: "<< m_self.GetNodeId () << " is receiving packet" << std::endl;
+      //std::cout<<"node: "<< m_self.GetNodeId () << " received a packet" << std::endl;
       NS_LOG_FUNCTION (this << packet << rxSnr << txMode << preamble);
       /* A packet is received from the PHY.
        * When we have handled this packet,
@@ -1018,7 +1025,7 @@ namespace ns3 {
           item.senderY = buff.ReadDouble ();
           item.receiverX = buff.ReadDouble ();
           item.receiverY = buff.ReadDouble ();
-          //std::cout<<m_self.GetNodeId () <<" sender: " << item.sender <<" receiver: "<< item.receiver <<" exclusion: "<< item.currentExclusionRegion<<" version: "<< (uint32_t)item.version << std::endl;
+          //std::cout<<m_self.GetNodeId () <<" sender: " << item.sender <<" receiver: "<< item.receiver <<" exclusion: "<< item.currentExclusionRegion<<" version: "<< (uint32_t)item.version <<" self: "<<m_self.GetNodeId ()<< std::endl;
           m_exclusionRegionHelper.AddOrUpdateExclusionRegion (item);
         }
         //m_signalMap.SortAccordingToInComingAttenuation ();
@@ -1029,6 +1036,7 @@ namespace ns3 {
         //
 
         //====BROADCAST MESSAGE================
+        //std::cout<<" which channel: "<< m_phy->GetChannelNumber () << std::endl;
 
         if ( m_phy->GetChannelNumber () == DATA_CHANNEL)
         {
@@ -1040,6 +1048,7 @@ namespace ns3 {
           {
             m_linkEstimator.AddSequenceNumber (hdr.GetSequenceNumber (), sender, receiver, Simulator::Now ());
             bool pdrUpdated = m_linkEstimator.IsPdrUpdated (sender, receiver, LINKE_ESTIMATOR_WINDOW_SIZE); // 20 as window size
+            //std::cout<<" is pdr updated: "<< pdrUpdated << std::endl;
             if ( pdrUpdated == true)
             {
               LinkEstimationItem _item = m_linkEstimator.GetLinkEstimationItem (sender, receiver);
@@ -1655,6 +1664,11 @@ rxPacket:
     MacLow::SendDataPacket (void)
     {
       NS_LOG_FUNCTION (this);
+      if ( m_phy->IsStateIdle () == false)
+      {
+        //std::cout<<" trying to send, channel is not idle, channel number is: "<< m_phy->GetChannelNumber () << std::endl; 
+        return;
+      }
       //std::cout<<m_self.GetNodeId ()<< " is sending "<< Simulator::Now ()<< std::endl;
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
@@ -1731,6 +1745,7 @@ rxPacket:
       uint32_t remainBytes = buff.CheckRemainBytes (DEFAULT_PACKET_LENGTH);
       uint32_t count = (remainBytes-1)/(13+32);
       std::vector<LinkExclusionRegion> linkExclusionRegionVec = m_exclusionRegionHelper.GetLatestUpdatedItems (count, m_signalMap);
+      //std::cout<<" linkexclusionregionvec.size: "<< linkExclusionRegionVec.size () <<" count: "<< count << std::endl;
       buff.WriteU8 ((uint8_t) linkExclusionRegionVec.size ());
       for (uint32_t i = 0; i < linkExclusionRegionVec.size (); ++ i)
       {
@@ -2342,7 +2357,7 @@ rxPacket:
     {
       // Need next sending slot
       m_nextSendingSlot = FindNextSendingSlot (unitedExclusionRegion);
-      //std::cout<<" trying to send. queueempty: "<< m_queueEmptyCallback () <<" stateidle: "<< m_phy->IsStateIdle () << std::endl;
+      //std::cout<<" trying to send. queueempty: "<< m_queueEmptyCallback () <<" stateidle: "<< m_phy->IsStateIdle ()<<" ersize: "<< unitedExclusionRegion.size ()<<" signalMap.size: " << m_signalMap.GetSignalMap ().size () << std::endl;
       if ( m_queueEmptyCallback () != true && m_phy->IsStateIdle ())
       {
         m_setDequeueCallback ();
@@ -2368,13 +2383,17 @@ rxPacket:
       Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
           &MacLow::ScheduleControlSignalTransmission, this);
       int64_t scheduleDelay = 1249; // Need To Test How Many MicroSeconds It Will Take
-      Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
+       m_setChannelEvent = Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
     }
   }
 
   void MacLow::SetChannelNumber (uint32_t channelNumber)
   {
-    m_phy->GetObject<YansWifiPhy> ()->SetChannelNumber (channelNumber);
+    if ( m_phy != NULL && m_self.GetNodeId () != 0)
+    {
+      //std::cout<<" m_self: "<< m_self.GetNodeId ()<<" " << m_self <<" m_phy->GetObject: "<< m_phy->GetObject<YansWifiPhy> () << std::endl;
+      m_phy->GetObject<YansWifiPhy> ()->SetChannelNumber (channelNumber);
+    }
   }
 
   bool MacLow::IsNeighborSignalMapExisted (uint16_t neighborId)
@@ -2704,5 +2723,10 @@ rxPacket:
       }
     }
     return vec;
+  }
+
+  void MacLow::PrintAddress ()
+  {
+    std::cout<<" printing node address: "<< m_self.GetNodeId () <<" joins the network this: "<< this << std::endl;
   }
 } // namespace ns3
