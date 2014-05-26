@@ -239,6 +239,22 @@ namespace ns3
   Ovnis::DestroyNetworkDevices()
   {
 
+    for (std::vector<std::string>::iterator i = Simulator::outCopy.begin(); i != Simulator::outCopy.end(); ++i)
+    {
+      vector<string>::iterator it;
+
+      it = std::find(runningVehicles.begin(), runningVehicles.end(), (*i));
+      if (it != runningVehicles.end())
+      {
+
+        runningVehicles.erase(it);
+      }
+    }
+
+    runningVehicles.insert(runningVehicles.end(), Simulator::inCopy.begin(), Simulator::inCopy.end());
+    Simulator::inCopy.clear ();
+    Simulator::outCopy.clear ();
+
     for (std::vector<Ptr<Node> >::iterator i = m_toDestroy.begin(); i != m_toDestroy.end(); ++i)
     {
 
@@ -342,7 +358,10 @@ namespace ns3
     //DestroyNetworkDevices();
 
     // -------- update the set of running vehicles
+    Simulator::inCopy.insert (Simulator::inCopy.end (), in.begin (), in.end ());
+    Simulator::outCopy.insert (Simulator::outCopy.end (), out.begin (), out.end ());
 
+    /*
     for (std::vector<std::string>::iterator i = out.begin(); i != out.end(); ++i)
     {
       vector<string>::iterator it;
@@ -356,6 +375,7 @@ namespace ns3
     }
 
     runningVehicles.insert(runningVehicles.end(), in.begin(), in.end());
+    */
 
     in.clear();
     out.clear();
@@ -417,6 +437,7 @@ namespace ns3
     mac = NqosWifiMacHelper::Default();
     mac.SetType("ns3::AdhocWifiMac");
 
+
   }
   void
   Ovnis::uppdateVehiclesPositions()
@@ -431,11 +452,14 @@ namespace ns3
 
       Position2D newPos;
 
+      if ( find (Simulator::outCopy.begin (), Simulator::outCopy.end (), *i) != Simulator::outCopy.end ())
+        continue;
       traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, (*i), newPos);
       double  newSpeed;
       traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, (*i), newSpeed);
       double newAngle;
       traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, (*i), newAngle);
+      std::cout<<" vehicle: "<< *i <<" newpos.x: "<< newPos.x <<" newpos.y: "<< newPos.y <<" newSpeed: "<< newSpeed << std::endl;
 
       Vector velocity(newSpeed * cos((newAngle + 90) * PI / 180.0), newSpeed * sin((newAngle - 90) * PI / 180.0), 0.0);
       Vector position(newPos.x, newPos.y, 0.0);

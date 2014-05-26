@@ -512,6 +512,7 @@ namespace ns3 {
   void
     MacLow::SetAddress (Mac48Address ad)
     {
+      //std::cout<<" m_self: "<< m_self <<" ad: "<< ad << std::endl;
       m_self = ad;
       if ( ad.GetNodeId () == 0)
       {
@@ -730,6 +731,7 @@ namespace ns3 {
       uint32_t edgeLength = buff.ReadU8 ();
       std::string edge = buff.ReadString (edgeLength);
       m_signalMap.UpdateVehicleStatus (sender, angle, x, y, edge);
+      //std::cout<<hdr.GetAddr2 ().GetNodeId ()<<" x: "<< x <<" y: "<< y << std::endl;
       //std::cout<<"sender: "<< hdr.GetAddr2 ().GetNodeId () << " receiver: "<< m_self.GetNodeId () <<" dist: "<< sqrt (pow (m_positionX - x,2) + pow (m_positionY - y, 2)) <<" atten: "<< txPower - rxPower <<std::endl;
       /*
       if ( Simulator::Now () > Seconds (START_PROCESS_TIME ) && (m_phy->GetChannelNumber () == DATA_CHANNEL ))
@@ -1071,7 +1073,7 @@ namespace ns3 {
                 double displacement = linkDistance - linkExclusionRegionRecord.distance;
                 linkExclusionRegionRecord.distance = linkDistance;
                 m_exclusionRegionHelper.AddOrUpdateExclusionRegion (linkExclusionRegionRecord);
-                if ( _item.estimationCount > 20 && displacement > 10)
+                if ( _item.estimationCount > 10 && displacement > 10)
                 {
 
                   DoubleRegression doubleRegression;
@@ -1757,7 +1759,7 @@ rxPacket:
         buff.WriteDouble (linkExclusionRegionVec[i].senderY);
         buff.WriteDouble (linkExclusionRegionVec[i].receiverX);
         buff.WriteDouble (linkExclusionRegionVec[i].receiverY);
-        //std::cout<<m_self.GetNodeId ()<<" writing sender: "<< linkExclusionRegionVec[i].sender<<" receiver: "<<linkExclusionRegionVec[i].receiver <<" exclusion: "<< linkExclusionRegionVec[i].currentExclusionRegion <<" version: "<< (uint32_t) linkExclusionRegionVec[i].version << std::endl;
+        //std::cout<<m_self.GetNodeId ()<<" writing sender: "<< linkExclusionRegionVec[i].sender<<" receiver: "<<linkExclusionRegionVec[i].receiver <<" exclusion: "<< linkExclusionRegionVec[i].currentExclusionRegion <<" version: "<< (uint32_t) linkExclusionRegionVec[i].version << " senderX: "<< linkExclusionRegionVec[i].senderX <<" senderY: "<< linkExclusionRegionVec[i].senderY <<" receiverX: "<< linkExclusionRegionVec[i].receiverX <<" receiverY: "<< linkExclusionRegionVec[i].receiverY << std::endl;
       }
 
 

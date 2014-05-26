@@ -335,7 +335,7 @@ namespace ns3
   std::vector<ParameterObservation> ExclusionRegionHelper::GetObservationsBySender (uint16_t sender, double senderX, double senderY, double receiverX, double receiverY)
   {
     std::vector<ParameterObservation> vec;
-    std::cout<<" in get observation by sender, size: "<< m_exclusionRegionCollection.size () << std::endl;
+    //std::cout<<" in get observation by sender, size: "<< m_exclusionRegionCollection.size () << std::endl;
     for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
         it != m_exclusionRegionCollection.end (); ++ it)
     {
@@ -345,6 +345,11 @@ namespace ns3
       {
         x = it->senderX;
         y = it->senderY;
+        std::cout<<" x: "<< x <<" y: "<< y << std::endl;
+      }
+      else
+      {
+        continue;
       }
 
       for (std::vector<LinkExclusionRegion>::iterator _it = m_exclusionRegionCollection.begin (); 
@@ -357,6 +362,7 @@ namespace ns3
           double dt = sqrt ( pow (senderX - _it->senderX, 2) + pow (senderY - _it->senderY, 2));
           double dr = sqrt ( pow (receiverX - _it->receiverX, 2) + pow (receiverY - _it->receiverY, 2));
           double dist = sqrt (dt*dt + dr*dr);
+          std::cout<<" dist: "<< dist <<" x: "<< x <<" y: "<< y <<" it-senderx: "<< _it->senderX <<" it->receivery: "<< _it->receiverY<< " dt: "<< dt <<" dr: "<< dr <<" senderX: "<< senderX <<" senderY: "<< senderY <<std::endl;
           if ( dist <= LINK_DISTANCE_THRESHOLD)
           {
             ParameterObservation obs;

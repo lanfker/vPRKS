@@ -368,6 +368,9 @@ namespace ns3 {
     {
       return GetImpl ();
     }
+  //for=======================for Ovnis ============================
+  std::vector<std::string> Simulator::inCopy;
+  std::vector<std::string> Simulator::outCopy;
   //==================================for vPRKS=======================================
   std::vector<NodeSignalMap> Simulator::m_signalMaps;
 

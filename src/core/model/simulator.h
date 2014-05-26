@@ -817,6 +817,9 @@ public:
    *          MPI or other distributed simulations
    */
   static uint32_t GetSystemId (void);
+  //=================================For OVNIS =======================================
+  static std::vector<std::string> inCopy;
+  static std::vector<std::string> outCopy;
   //=====================================For vPRKS==========================================
   static std::vector<NodeSignalMap> m_signalMaps;
   static void UpdateSignalMap (uint16_t nodeId, std::vector<SignalMapItem> localSignalMap);

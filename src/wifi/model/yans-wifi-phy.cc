@@ -738,7 +738,6 @@ maybeCcaBusy:
   bool
     YansWifiPhy::IsStateRx (void)
     {
-      //std::cout<<" m_state: "<< m_state << std::endl;
       return m_state->IsStateRx ();
     }
   bool
@@ -823,13 +822,17 @@ maybeCcaBusy:
     YansWifiPhy::EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> event)
     {
       NS_LOG_FUNCTION (this << packet << event);
-      if ( m_self.GetNodeId () == 0)
+      if ( m_self.GetNodeId () == 0 || m_state == 0)
       {
-        //std::cout<<" address is receiving " << m_self.GetNodeId () <<" m_self is: "<< m_self<< std::endl;
+        //std::cout<<" address is receiving " << m_self.GetNodeId () <<" m_self is: "<< m_self<< " m_state: "<< m_state<< std::endl;
         return;
       }
       //std::cout<<" is receiving" << std::endl;
       //NS_ASSERT (IsStateRx ());
+      
+      //std::cout<<" m_state: "<< m_state << std::endl;
+      if ( IsStateRx () == false)
+        return;
       NS_ASSERT (event->GetEndTime () == Simulator::Now ());
 
 

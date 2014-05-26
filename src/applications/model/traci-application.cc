@@ -106,7 +106,7 @@ namespace ns3
     //mac->PrintAddress ();
 
     traciClient->commandGetVariableStringList(CMD_GET_VEHICLE_VARIABLE, VAR_EDGES, m_name, m_route);
-    m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
+    //m_actionEvent = Simulator::Schedule (Seconds(m_random.GetValue (0, 5)), &TraciApplication::StateInfoFetch, this);
     m_nextEventId = Simulator::Schedule (MilliSeconds (m_random.GetValue (0, PAKCET_GENERATION_INTERVAL)), &TraciApplication::GenerateTraffic, this);
   }
   void TraciApplication::StopApplication (void)
@@ -117,7 +117,7 @@ namespace ns3
   void TraciApplication::GenerateTraffic ()
   {
     
-    if (HostRunning () ==  false )
+    if (HostRunning () ==  false || find (Simulator::outCopy.begin (), Simulator::outCopy.end (), m_name) != Simulator::outCopy.end ())
     {
       StopApplication ();
       return;

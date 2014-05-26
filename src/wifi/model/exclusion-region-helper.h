@@ -22,6 +22,7 @@ namespace ns3{
     double senderY;
     double receiverX;
     double receiverY;
+    Time timeStamp;
   }LinkExclusionRegion;
 
 

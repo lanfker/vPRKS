@@ -141,7 +141,7 @@ namespace ns3
       std::vector<ParameterObservation> vec = ers.GetObservationsBySender (*it, senderX, senderY, receiverX, receiverY);
       uint32_t obsCount = vec.size ();
 
-      //std::cout<<" vec.size: "<< vec.size () << std::endl;
+      std::cout<<" vec.size: "<< vec.size () << std::endl;
       if ( obsCount > 5)
       {
         Matrix phi = Matrix(obsCount, 3);
@@ -181,7 +181,7 @@ namespace ns3
     }
 
     uint32_t obsCount = _vec.size ();
-    std::cout<<" obsCount: "<< _vec.size () << std::endl;
+    std::cout<<" second step: obsCount: "<< _vec.size () << std::endl;
     if ( obsCount > 5)
     {
       Matrix phi = Matrix(obsCount, 3);
