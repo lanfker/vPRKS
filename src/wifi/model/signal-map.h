@@ -19,6 +19,8 @@ namespace ns3{
 #define SIGNAL_MAP_ITEM
   typedef struct SignalMapItem
   {
+    double selfx;
+    double selfy;
     uint16_t from; // from is the neighbor.
     uint16_t to; // to is m_self
     double attenuation;

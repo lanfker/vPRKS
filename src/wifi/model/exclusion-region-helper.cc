@@ -37,6 +37,14 @@ namespace ns3
       LinkExclusionRegion item, double txPower, double backgroundInterferenceW, double ewmaPdr)
   {
 
+    /*
+    for (std::vector<LinkExclusionRegion>::iterator it = m_exclusionRegionCollection.begin (); 
+        it != m_exclusionRegionCollection.end (); ++ it)
+    {
+      std::cout<<" sender: "<< it->sender <<" receiver: "<< it->receiver << " exclusion region: "<< it->currentExclusionRegion  <<" senderx: "<< it->senderX <<" senderY: "<< it->senderY <<" receiverx: "<< it->receiverX <<" receiverY: "<< it->receiverY <<" distance: "<< it->distance <<" ver: "<< (uint32_t)it->version <<" timestamp: "<< it->timeStamp << std::endl;
+    }
+    */
+
     //std::cout<<" m_exclusionRegionCollection.size (): "<< m_exclusionRegionCollection.size ()<< std::endl;
     //signalMap.PrintSignalMap (receiver);
     txPower = txPower + TX_GAIN;
@@ -83,6 +91,7 @@ namespace ns3
               std::cout<<" sum: "<< interferenceSum <<" deltaInterference: "<< fabs (deltaInterference) <<" target: sum interference greater than delta, then we can stop, current InterferenceW: " << interferenceW << std::endl;
 
               it->currentExclusionRegion = interferenceW;
+              it->timeStamp = Simulator::Now ();
               return interferenceW;
             }
           }
@@ -95,6 +104,7 @@ namespace ns3
 
             it -> currentExclusionRegion = lastElementInterferenceW;
           }
+          it->timeStamp = Simulator::Now ();
           return it->currentExclusionRegion;
         }
         else if (deltaInterference > 0) // shrink exclusion region
@@ -133,12 +143,14 @@ namespace ns3
                 //std::cout<<" txpower: "<< txPower <<" _it-1->from "<< (_it - 1)->from <<" atten: "<< (_it-1)->attenuation <<" er: "<< it->currentExclusionRegion << std::endl;
                 std::cout<<" current InterferenceW: "<< DbmToW (txPower - (_it+1)->attenuation ) << std::endl;
 
+                it->timeStamp = Simulator::Now ();
                 return it->currentExclusionRegion;
               }
               else
               {
                 it->currentExclusionRegion = interferenceW;
                 std::cout<<" current InterferenceW: "<< interferenceW << std::endl;
+                it->timeStamp = Simulator::Now ();
                 return it->currentExclusionRegion;
               }
               //it->currentExclusionRegion = 
@@ -148,6 +160,7 @@ namespace ns3
             {
               std::cout<<" shrink, interference sum equals to delta interference" << std::endl;
               it->currentExclusionRegion = interferenceW;
+              it->timeStamp = Simulator::Now ();
               return it->currentExclusionRegion;
               // do not need reverse
             }
@@ -162,6 +175,8 @@ namespace ns3
             interferenceW = DbmToW (txPower - signalMap.begin ()->attenuation); 
             if ( interferenceW < it->currentExclusionRegion) // if the first item is smaller than the exclusion region,this means the exclusion region is too small.
               it->currentExclusionRegion = interferenceW;
+
+            it->timeStamp = Simulator::Now ();
             return it->currentExclusionRegion;
           }
 
@@ -171,12 +186,14 @@ namespace ns3
         else if (deltaInterference == 0) //keep unchanged.
         {
           std::cout<<" delta Interference equals to zero, does not have to change exclusion region. " << std::endl;
+          it->timeStamp = Simulator::Now ();
           return it->currentExclusionRegion;
         }
       }
       //return it->currentExclusionRegion;
     }
     m_exclusionRegionCollection.push_back (item);
+    item.timeStamp = Simulator::Now ();
     return item.currentExclusionRegion;
     /*
     signalMap.SortAccordingToAttenuation ();
@@ -226,6 +243,7 @@ namespace ns3
       }
     }
     //no record exist regarding this link (sender ==> receiver);
+    item.timeStamp = Simulator::Now ();
     m_exclusionRegionCollection.insert ( m_exclusionRegionCollection.begin (), item);
     return;
   }
@@ -345,7 +363,7 @@ namespace ns3
       {
         x = it->senderX;
         y = it->senderY;
-        std::cout<<" x: "<< x <<" y: "<< y << std::endl;
+        //std::cout<<" x: "<< x <<" y: "<< y << std::endl;
       }
       else
       {
@@ -359,10 +377,13 @@ namespace ns3
         {
           double senderXDifference = x - _it->senderX;
           double senderYDifference = y - _it->senderY;
+          if ( senderX - _it->senderX >= LINK_DISTANCE_THRESHOLD || senderY - _it->senderY >= LINK_DISTANCE_THRESHOLD 
+              || receiverX - _it->receiverX >= LINK_DISTANCE_THRESHOLD || receiverY - _it->receiverY >= LINK_DISTANCE_THRESHOLD )
+            continue;
           double dt = sqrt ( pow (senderX - _it->senderX, 2) + pow (senderY - _it->senderY, 2));
           double dr = sqrt ( pow (receiverX - _it->receiverX, 2) + pow (receiverY - _it->receiverY, 2));
           double dist = sqrt (dt*dt + dr*dr);
-          std::cout<<" dist: "<< dist <<" x: "<< x <<" y: "<< y <<" it-senderx: "<< _it->senderX <<" it->receivery: "<< _it->receiverY<< " dt: "<< dt <<" dr: "<< dr <<" senderX: "<< senderX <<" senderY: "<< senderY <<std::endl;
+          std::cout<<" dist: "<< dist <<" x: "<< x <<" y: "<< y <<" it-senderx: "<< _it->senderX <<" it->sendereY: "<< _it->senderY <<" it->receiverX: "<< _it->receiverX <<" it->receiverY: "<< _it->receiverY << " dt: "<< dt <<" dr: "<< dr <<" senderX: "<< senderX <<" senderY: "<< senderY <<" duration: "<< Simulator::Now () - it->timeStamp <<std::endl;
           if ( dist <= LINK_DISTANCE_THRESHOLD)
           {
             ParameterObservation obs;

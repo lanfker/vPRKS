@@ -771,6 +771,8 @@ namespace ns3 {
 
       //==============================Signal Map Sample==============================================
       SignalMapItem signalMapItem;
+      signalMapItem.selfx = m_positionX;
+      signalMapItem.selfy = m_positionY;
       signalMapItem.to = m_self.GetNodeId ();
       signalMapItem.from = hdr.GetAddr2 ().GetNodeId ();
       signalMapItem.attenuation = txPower - rxPower;
@@ -1027,11 +1029,15 @@ namespace ns3 {
           item.senderY = buff.ReadDouble ();
           item.receiverX = buff.ReadDouble ();
           item.receiverY = buff.ReadDouble ();
-          //std::cout<<m_self.GetNodeId () <<" sender: " << item.sender <<" receiver: "<< item.receiver <<" exclusion: "<< item.currentExclusionRegion<<" version: "<< (uint32_t)item.version <<" self: "<<m_self.GetNodeId ()<< std::endl;
+          //std::cout<<m_self.GetNodeId () <<" sender: " << item.sender <<" receiver: "<< item.receiver <<" exclusion: "<< item.currentExclusionRegion<<" version: "<< (uint32_t)item.version <<" self: "<<m_self.GetNodeId () <<" senderx: "<< item.senderX <<" senderY: "<< item.senderY << " receiverx: "<< item.receiverX <<" receivery: "<< item.receiverY<< std::endl;
           m_exclusionRegionHelper.AddOrUpdateExclusionRegion (item);
         }
         //m_signalMap.SortAccordingToInComingAttenuation ();
-        //m_signalMap.PrintSignalMap (m_self.GetNodeId ());
+        if ( m_self.GetNodeId () == 30 )
+        {
+          std::cout<<m_self.GetNodeId () <<" m_position.x: "<< m_positionX <<" m_position.y: "<< m_positionY << std::endl;
+          m_signalMap.PrintSignalMap (m_self.GetNodeId ());
+        }
         delete [] temp;
 
         //---------------------------------------------
@@ -1057,28 +1063,28 @@ namespace ns3 {
               if ( _item.sender != 0 && _item.receiver != 0)
               {
                 LinkExclusionRegion linkExclusionRegionRecord = m_exclusionRegionHelper.GetExclusionRegionRecord (sender, receiver);
+                linkExclusionRegionRecord.senderX = x;
+                linkExclusionRegionRecord.senderY = y;
+                linkExclusionRegionRecord.receiverX = m_positionX;
+                linkExclusionRegionRecord.receiverY = m_positionY;
                 if ( linkExclusionRegionRecord.sender == 0 && linkExclusionRegionRecord.receiver == 0)
                 {
                   linkExclusionRegionRecord.sender = sender;
                   linkExclusionRegionRecord.receiver = receiver;
                   linkExclusionRegionRecord.distance = linkDistance;
                   linkExclusionRegionRecord.version = 0;
-                  linkExclusionRegionRecord.senderX = x;
-                  linkExclusionRegionRecord.senderY = y;
-                  linkExclusionRegionRecord.receiverX = m_positionX;
-                  linkExclusionRegionRecord.receiverY = m_positionY;
                   linkExclusionRegionRecord.currentExclusionRegion = DEFAULT_EXCLUSION_REGION_WATT;
                 }
                 //Check distance, if displacement is greater than average displacement, use estimated exclusion region value.
                 double displacement = linkDistance - linkExclusionRegionRecord.distance;
                 linkExclusionRegionRecord.distance = linkDistance;
                 m_exclusionRegionHelper.AddOrUpdateExclusionRegion (linkExclusionRegionRecord);
-                if ( _item.estimationCount > 10 && displacement > 10)
+                if ( _item.estimationCount > 5 && displacement > 10)
                 {
 
                   DoubleRegression doubleRegression;
                   double estimatedExclusionRegion = doubleRegression.ParameterEstimation (sender, receiver, x, y, m_positionX, m_positionY, m_exclusionRegionHelper);
-                  std::cout<<" estimated exclusion region: "<< estimatedExclusionRegion << std::endl;
+                  std::cout<<m_self.GetNodeId ()<<" estimated exclusion region: "<< estimatedExclusionRegion << std::endl;
                 }
                 bool conditionTwoMeet = false;
                 double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);

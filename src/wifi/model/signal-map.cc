@@ -103,9 +103,8 @@ namespace ns3
     std::cout<<"-------------------signal map for node: "<< nodeId << "-------------------"<< std::endl;
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
     {
-      std::cout<<"from: "<<it->from<<" to: "<<it->to <<" Atten: "<< it->attenuation <<" timestamp: "<< it->timeStamp 
-        <<" angle: "<< it->angle <<" exclusionRegion: "<< it->exclusionRegion 
-        <<" x: "<<it->x <<" y: "<< it->y <<" edge: "<< it->edge << std::endl;
+      //std::cout<<"from: "<<it->from<<" to: "<<it->to <<" Atten: "<< it->attenuation <<" timestamp: "<< it->timeStamp <<" angle: "<< it->angle <<" exclusionRegion: "<< it->exclusionRegion <<" x: "<<it->x <<" y: "<< it->y <<" selfx: "<< it->selfx <<" selfy: "<< it->selfy <<" edge: "<< it->edge <<" distance: "<< sqrt ( pow (it->selfx - it->x, 2) + pow (it->selfy - it->y, 2)) << std::endl;
+      std::cout<<"from: "<<it->from<<" to: "<<it->to <<" duration: "<< Simulator::Now() - it->timeStamp <<" exclusionRegion: "<< it->exclusionRegion <<" x: "<<it->x <<" y: "<< it->y <<" selfx: "<< it->selfx <<" selfy: "<< it->selfy <<" distance: "<< sqrt ( pow (it->selfx - it->x, 2) + pow (it->selfy - it->y, 2)) << std::endl;
     }
     std::cout<<"--------------------------------------------------"<< std::endl;
   }
