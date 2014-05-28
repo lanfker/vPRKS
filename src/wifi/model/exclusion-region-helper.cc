@@ -383,7 +383,7 @@ namespace ns3
           double dt = sqrt ( pow (senderX - _it->senderX, 2) + pow (senderY - _it->senderY, 2));
           double dr = sqrt ( pow (receiverX - _it->receiverX, 2) + pow (receiverY - _it->receiverY, 2));
           double dist = sqrt (dt*dt + dr*dr);
-          std::cout<<" dist: "<< dist <<" x: "<< x <<" y: "<< y <<" it-senderx: "<< _it->senderX <<" it->sendereY: "<< _it->senderY <<" it->receiverX: "<< _it->receiverX <<" it->receiverY: "<< _it->receiverY << " dt: "<< dt <<" dr: "<< dr <<" senderX: "<< senderX <<" senderY: "<< senderY <<" duration: "<< Simulator::Now () - it->timeStamp <<std::endl;
+          //std::cout<<" dist: "<< dist <<" x: "<< x <<" y: "<< y <<" it-senderx: "<< _it->senderX <<" it->sendereY: "<< _it->senderY <<" it->receiverX: "<< _it->receiverX <<" it->receiverY: "<< _it->receiverY << " dt: "<< dt <<" dr: "<< dr <<" senderX: "<< senderX <<" senderY: "<< senderY <<" duration: "<< Simulator::Now () - it->timeStamp <<std::endl;
           if ( dist <= LINK_DISTANCE_THRESHOLD)
           {
             ParameterObservation obs;

@@ -481,6 +481,20 @@ namespace ns3 {
     m_nodeStatusTable.push_back (nodeStatus);
   }
 
+  void Simulator::PrintReceivers (uint16_t nodeId)
+  {
+    NodeStatus senderStatus = GetNodeStatus (nodeId);
+    for (std::vector<NodeStatus>::iterator it = m_nodeStatusTable.begin (); it != m_nodeStatusTable.end (); ++ it)
+    {
+      if ( it->nodeId == nodeId )
+        continue;
+      if ( sqrt ( pow (senderStatus.x - it->x, 2)+ pow (senderStatus.y - it->y, 2)) <= MAX_LINK_DISTANCE)
+      {
+        std::cout<<"Node: "<< it->nodeId <<" should be a receiver of node: "<< nodeId << std::endl;
+      }
+    }
+  }
+
   void Simulator::GetSlotsForNode (uint16_t nodeId, uint16_t &begin, uint16_t &end)
   {
     for (std::vector<NodeStatus>::iterator it = m_nodeStatusTable.begin (); it != m_nodeStatusTable.end (); ++ it)

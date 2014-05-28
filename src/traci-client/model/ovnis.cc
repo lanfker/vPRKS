@@ -459,7 +459,7 @@ namespace ns3
       traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, (*i), newSpeed);
       double newAngle;
       traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, (*i), newAngle);
-      std::cout<<" vehicle: "<< *i <<" newpos.x: "<< newPos.x <<" newpos.y: "<< newPos.y <<" newSpeed: "<< newSpeed << std::endl;
+      //std::cout<<" vehicle: "<< *i <<" newpos.x: "<< newPos.x <<" newpos.y: "<< newPos.y <<" newSpeed: "<< newSpeed << std::endl;
 
       Vector velocity(newSpeed * cos((newAngle + 90) * PI / 180.0), newSpeed * sin((newAngle - 90) * PI / 180.0), 0.0);
       Vector position(newPos.x, newPos.y, 0.0);

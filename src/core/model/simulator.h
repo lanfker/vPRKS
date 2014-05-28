@@ -831,6 +831,8 @@ public:
   static std::vector<NodeStatus> m_nodeStatusTable;
   static void UpdateNodeStatus (uint16_t nodeId, NodeStatus nodeStatus);
   static NodeStatus GetNodeStatus (uint16_t nodeId);
+  static void PrintReceivers (uint16_t nodeId);
+
   static double GetDistanceBetweenTwoNodes (uint16_t n1, uint16_t n2);
   static void PrintSignalMaps (uint16_t nodeId);
   static void PrintNodeStatus (uint16_t nodeId);
@@ -845,6 +847,7 @@ public:
   static bool IsReceiverInCurrentSlot (uint16_t nodeId, int16_t slot);
   static bool CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor);
   static void GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, std::vector<uint16_t> &vec);
+
 private:
   Simulator ();
   ~Simulator ();

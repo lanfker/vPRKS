@@ -37,8 +37,11 @@ namespace ns3
         it->attenuation = item.attenuation;
         it->timeStamp = item.timeStamp;
         it->angle = item.angle;
-        it->x = item.x;
-        it->y = item.y;
+        NodeStatus nodeStatus = Simulator::GetNodeStatus (item.from);
+        //it->x = item.x;
+        //it->y = item.y;
+        it->x = nodeStatus.x;
+        it->y = nodeStatus.y;
         it->edge = item.edge;
         return;
       }

@@ -703,7 +703,6 @@ namespace ns3 {
   void
     MacLow::ReceiveOk (Ptr<Packet> packet, double rxSnr, WifiMode txMode, WifiPreamble preamble)
     {
-      //std::cout<<"node: "<< m_self.GetNodeId () << " received a packet" << std::endl;
       NS_LOG_FUNCTION (this << packet << rxSnr << txMode << preamble);
       /* A packet is received from the PHY.
        * When we have handled this packet,
@@ -1005,6 +1004,8 @@ namespace ns3 {
       else if (hdr.GetAddr1 ().IsGroup ())
       { 
 
+        if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == DATA_CHANNEL)
+          std::cout<<Simulator::Now () <<" node: "<< m_self.GetNodeId () << " received a packet from: " << hdr.GetAddr2 ().GetNodeId () << std::endl;
         int64_t receivedNextSendingSlot = buff.ReadU64 ();
         //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" from "<< hdr.GetAddr2 ().GetNodeId ()<< std::endl;
 
@@ -1033,11 +1034,13 @@ namespace ns3 {
           m_exclusionRegionHelper.AddOrUpdateExclusionRegion (item);
         }
         //m_signalMap.SortAccordingToInComingAttenuation ();
+        /*
         if ( m_self.GetNodeId () == 30 )
         {
-          std::cout<<m_self.GetNodeId () <<" m_position.x: "<< m_positionX <<" m_position.y: "<< m_positionY << std::endl;
+          std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" m_position.x: "<< m_positionX <<" m_position.y: "<< m_positionY << std::endl;
           m_signalMap.PrintSignalMap (m_self.GetNodeId ());
         }
+        */
         delete [] temp;
 
         //---------------------------------------------
@@ -1078,25 +1081,34 @@ namespace ns3 {
                 //Check distance, if displacement is greater than average displacement, use estimated exclusion region value.
                 double displacement = linkDistance - linkExclusionRegionRecord.distance;
                 linkExclusionRegionRecord.distance = linkDistance;
-                m_exclusionRegionHelper.AddOrUpdateExclusionRegion (linkExclusionRegionRecord);
-                if ( _item.estimationCount > 5 && displacement > 10)
+                double exclusionRegionUpdated = false;
+                if ( _item.estimationCount > 5 && displacement > 10) //use estimation
                 {
 
                   DoubleRegression doubleRegression;
                   double estimatedExclusionRegion = doubleRegression.ParameterEstimation (sender, receiver, x, y, m_positionX, m_positionY, m_exclusionRegionHelper);
+                  if ( estimatedExclusionRegion != 0) // estimation success
+                  {
+                    exclusionRegionUpdated = true;
+                    linkExclusionRegionRecord.currentExclusionRegion = estimatedExclusionRegion;
+                  }
                   std::cout<<m_self.GetNodeId ()<<" estimated exclusion region: "<< estimatedExclusionRegion << std::endl;
                 }
-                bool conditionTwoMeet = false;
-                double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
-                std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr <<" link length: "<<linkDistance << " estimationCount: "<< _item.estimationCount<< std::endl;
+                m_exclusionRegionHelper.AddOrUpdateExclusionRegion (linkExclusionRegionRecord);
+                if ( exclusionRegionUpdated == false) //estimation failure or do not need to estimate. use this part of the logic.
+                {
+                  bool conditionTwoMeet = false;
+                  double deltaInterferenceDb = m_minimumVarianceController.GetDeltaInterference (DESIRED_PDR, _item.ewmaPdr, _item.instantPdr, conditionTwoMeet);
+                  std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId () <<" "<< Simulator::Now () << " deltaInterferenceDb: "<< deltaInterferenceDb<<" ewmapdr: "<< _item.ewmaPdr <<" instantpdr: "<< _item.instantPdr <<" link length: "<<linkDistance << " estimationCount: "<< _item.estimationCount<< std::endl;
 
-                std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
-                SignalMap signalMap = SignalMap (signalMapVec);
-                double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
-                double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, linkExclusionRegionRecord, DEFAULT_POWER, interferenceW, _item.ewmaPdr);
-                m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
-                Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
-                std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
+                  std::vector<SignalMapItem> signalMapVec = Simulator::GetSignalMap (m_self.GetNodeId ());
+                  SignalMap signalMap = SignalMap (signalMapVec);
+                  double interferenceW = m_phy->GetObject<YansWifiPhy> ()->ComputeInterferenceWhenReceivingData ();
+                  double exclusionRegion = m_exclusionRegionHelper.AdaptExclusionRegion (signalMap, deltaInterferenceDb, linkExclusionRegionRecord, DEFAULT_POWER, interferenceW, _item.ewmaPdr);
+                  m_signalMap.UpdateExclusionRegion (sender, receiver, exclusionRegion);
+                  Simulator::UpdateLinkExclusionRegion (sender, receiver, exclusionRegion);
+                  std::cout<<" link sender: "<< sender <<" receiver: "<< receiver << " exclusionRegion: "<< exclusionRegion<< std::endl;
+                }
               }
             }
           }
@@ -1677,9 +1689,14 @@ rxPacket:
         //std::cout<<" trying to send, channel is not idle, channel number is: "<< m_phy->GetChannelNumber () << std::endl; 
         return;
       }
-      //std::cout<<m_self.GetNodeId ()<< " is sending "<< Simulator::Now ()<< std::endl;
+      if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == DATA_CHANNEL)
+        std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<< " is sending "<< std::endl;
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
+      if (Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == DATA_CHANNEL)
+      {
+        Simulator::PrintReceivers (m_self.GetNodeId () );
+      }
 
       WifiMode dataTxMode = GetDataTxMode (m_currentPacket, &m_currentHdr);
       Time duration = Seconds (0.0);

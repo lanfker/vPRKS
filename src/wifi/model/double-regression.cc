@@ -95,7 +95,7 @@ namespace ns3
     Matrix phiDotPhiTranspose = Matrix ( phiTranspose.GetM (), phi.GetN ());
 
     std::cout<<" phi "<< std::endl;
-    phi.ShowMatrix ();
+    //phi.ShowMatrix ();
     phi.Transpose (phiTranspose); // \Phi^T * \Phi
 
     phiTranspose.Product (phi, phiDotPhiTranspose); // (\Phi^T \Phi)^{-1}
@@ -103,10 +103,10 @@ namespace ns3
   if ( fabs (phiTranspose.GetDeterminant () ) <= 1.0e-3)
     return false;
   */
-      std::cout<<" phi^t "<< std::endl;
-  phiTranspose.ShowMatrix ();
-  std::cout<<" phi^t * phi"<< std::endl;
-  phiDotPhiTranspose.ShowMatrix ();
+  //std::cout<<" phi^t "<< std::endl;
+  //phiTranspose.ShowMatrix ();
+  //std::cout<<" phi^t * phi"<< std::endl;
+  //phiDotPhiTranspose.ShowMatrix ();
 
   Matrix inv = Matrix (phiDotPhiTranspose.GetM (), phiDotPhiTranspose.GetN ());
   betaExist = phiDotPhiTranspose.Inverse (inv);
@@ -115,13 +115,13 @@ namespace ns3
     std::cout<<" inverse does  not exits "<< std::endl;
     return betaExist;
   }
-  std::cout<<" (phi^t * phi)^{-1}"<< std::endl;
-  inv.ShowMatrix ();
+  //std::cout<<" (phi^t * phi)^{-1}"<< std::endl;
+  //inv.ShowMatrix ();
 
   Matrix inverseDotTranspose = Matrix (inv.GetM (), phiTranspose.GetN ());
   inv.Product (phiTranspose, inverseDotTranspose);//(\Phi^T \Phi)^{-1} * \Phi^T
-  std::cout<<" (phi^t * phi)^{-1} * phi^t"<< std::endl;
-  inverseDotTranspose.ShowMatrix (); 
+  //std::cout<<" (phi^t * phi)^{-1} * phi^t"<< std::endl;
+  //inverseDotTranspose.ShowMatrix (); 
 
   //betaMatrix = Matrix (inverseDotTranspose.GetM (), pathLoss.GetN ());
   //std::cout<<" (phi^t * phi)^{-1} * phi^t * L"<< std::endl;
@@ -162,7 +162,7 @@ namespace ns3
         {
           NodeStatus status = Simulator::GetNodeStatus (*it);
           //std::cout<<" coefficients are: "<< std::endl;
-          betaMatrix.ShowMatrix ();
+          //betaMatrix.ShowMatrix ();
           double parameter= betaMatrix.GetValue (0,0) + receiverX * betaMatrix.GetValue (1,0) + receiverY * betaMatrix.GetValue (2,0);
           std::cout<<" parameter: "<< parameter << std::endl;
           double dist = sqrt ( pow(status.x - receiverX, 2) + pow ( status.y - receiverY, 2 ));
@@ -188,15 +188,18 @@ namespace ns3
       Matrix pathLoss = Matrix (obsCount, 1);
       Initialize (_vec, phi, pathLoss, true);
       Matrix  betaMatrix = Matrix (3,1);
-      phi.ShowMatrix ();
-      pathLoss.ShowMatrix ();
+      //phi.ShowMatrix ();
+      //pathLoss.ShowMatrix ();
       bool betaExist = false; 
       betaExist = GetCoefficientBeta (betaMatrix, phi, pathLoss); 
       std::cout<<" beta exist: "<< betaExist << std::endl;
       if (betaExist == true)
       {
         double parameter= betaMatrix.GetValue (0,0) + senderX * betaMatrix.GetValue (1,0) + senderY * betaMatrix.GetValue (2,0);
-        return parameter;
+        if ( parameter < 0) //dbm
+          return DbmToW (parameter);
+        else // dbm >=0 cannot be an exclusion region
+          return 0;
       }
       else
       {
