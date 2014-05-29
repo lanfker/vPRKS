@@ -140,6 +140,7 @@ namespace ns3
     traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, m_position);
     //std::cout<<" positio: "<< m_position.x <<" "<< m_position.y << std::endl;
     traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, m_name, m_angle);
+    traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, (*i), m_speed);
     mac->SetAngle (m_angle );
     mac->SetPosition (m_position.x, m_position.y);
     if ( m_edge.empty () == false)
@@ -157,7 +158,7 @@ namespace ns3
     buff.WriteDouble (m_angle);
     buff.WriteDouble (m_position.x);
     buff.WriteDouble (m_position.y);
-    //std::cout<<"sending: "<<m_angle<<" "<<m_position.x <<" "<< m_position.y << std::endl;
+    buff.WriteDouble (m_speed);
     Ptr<Packet> pkt = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
 
     mac->Enqueue (pkt, addr1);

@@ -726,6 +726,7 @@ namespace ns3 {
       double angle = buff.ReadDouble ();
       double x = buff.ReadDouble ();
       double y = buff.ReadDouble ();
+      double speed = buff.ReadDouble ();
       m_txPower = txPower; //dBm
       uint32_t edgeLength = buff.ReadU8 ();
       std::string edge = buff.ReadString (edgeLength);
@@ -779,8 +780,9 @@ namespace ns3 {
       signalMapItem.angle = angle;
       signalMapItem.x = x;
       signalMapItem.y = y;
+      signalMapItem.speed = speed;
       signalMapItem.edge = edge;
-      m_signalMap.AddOrUpdate (signalMapItem);
+      m_signalMap.AddOrUpdate (signalMapItem, true);
       // Here, we also fake signal map for now. Will update later.
       Simulator::UpdateSignalMap (m_self.GetNodeId (), m_signalMap.GetSignalMap ());
       //Simulator::PrintSignalMaps(m_self.GetNodeId ());
@@ -1750,7 +1752,7 @@ rxPacket:
       buff.WriteDouble (m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (txPowerLevel) + TX_GAIN);
 
       //std::cout<<" encoded: "<< m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (0) << std::endl;
-      buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
+      buff.ReadDoubles (5); //rxpower, angle, pos.x, pos.y, speed
       buff.WriteU8 ((uint8_t)m_edge.size ());
       buff.WriteString (m_edge);
 
@@ -1782,7 +1784,6 @@ rxPacket:
         buff.WriteDouble (linkExclusionRegionVec[i].senderY);
         buff.WriteDouble (linkExclusionRegionVec[i].receiverX);
         buff.WriteDouble (linkExclusionRegionVec[i].receiverY);
-        //std::cout<<m_self.GetNodeId ()<<" writing sender: "<< linkExclusionRegionVec[i].sender<<" receiver: "<<linkExclusionRegionVec[i].receiver <<" exclusion: "<< linkExclusionRegionVec[i].currentExclusionRegion <<" version: "<< (uint32_t) linkExclusionRegionVec[i].version << " senderX: "<< linkExclusionRegionVec[i].senderX <<" senderY: "<< linkExclusionRegionVec[i].senderY <<" receiverX: "<< linkExclusionRegionVec[i].receiverX <<" receiverY: "<< linkExclusionRegionVec[i].receiverY << std::endl;
       }
 
 
@@ -2448,7 +2449,7 @@ rxPacket:
     {
       if ( it->neighborId == item.to)
       {
-        it->signalMap.AddOrUpdate (item);
+        it->signalMap.AddOrUpdate (item, false);
         it->signalMap.SortAccordingToAttenuation ();
         break;
       }

@@ -29,6 +29,7 @@ namespace ns3{
     double exclusionRegion;// dBm
     double x;
     double y;
+    double speed;
     std::string edge;
   }SignalMapItem;
 #endif 
@@ -59,7 +60,7 @@ namespace ns3{
       SignalMap ();
       SignalMap (std::vector<SignalMapItem> vec);
       ~SignalMap ();
-      void AddOrUpdate (SignalMapItem item);
+      void AddOrUpdate (SignalMapItem item, bool self);
       SignalMapItem FetchSignalMapItem (uint16_t from, uint16_t to);
       void SortAccordingToAttenuation ();
       void SortAccordingToTimeStamp ();

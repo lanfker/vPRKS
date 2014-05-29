@@ -27,7 +27,10 @@ namespace ns3
   SignalMap::~SignalMap ()
   {
   }
-  void SignalMap::AddOrUpdate (SignalMapItem item)
+  // the parameter @self identifies if the signal map item is directly from the the node item.from. 
+  // If yes, we do not need position estimation, 
+  // if no, we need position estimation
+  void SignalMap::AddOrUpdate (SignalMapItem item, bool self)
   {
     //std::cout<<" signalmap.size: "<< m_signalMap.size () << std::endl;
     for (std::vector<SignalMapItem>::iterator it = m_signalMap.begin (); it != m_signalMap.end (); ++ it)
@@ -35,14 +38,21 @@ namespace ns3
       if (item.from == it->from && item.to == it->to )
       {
         it->attenuation = item.attenuation;
-        it->timeStamp = item.timeStamp;
         it->angle = item.angle;
-        NodeStatus nodeStatus = Simulator::GetNodeStatus (item.from);
-        //it->x = item.x;
-        //it->y = item.y;
-        it->x = nodeStatus.x;
-        it->y = nodeStatus.y;
+        if ( self == false) // position estimation
+        {
+          double timeElapsed = (item.timeStamp - it->timeStamp).GetSecods ();
+          it->y = it->y + (timeElapsed * item.speed ) * cos (item.angle * PI/180.0);
+          it->x = it->x + (timeElapsed * item.speed ) * sin (item.angle * PI/180.0);
+        }
+        else
+        {
+          it->x = item.x;
+          it->y = item.y;
+        }
         it->edge = item.edge;
+        it->speed = item.speed;
+        it->timeStamp = item.timeStamp;
         return;
       }
     }
@@ -219,7 +229,7 @@ namespace ns3
   {
     for (std::vector<SignalMapItem>::iterator it = vec.begin (); it != vec.end (); ++ it)
     {
-      AddOrUpdate (*it);
+      AddOrUpdate (*it, true);
     }
     SortAccordingToAttenuation ();
   }

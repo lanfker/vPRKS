@@ -70,6 +70,7 @@ typedef struct SignalMapItem
   double exclusionRegion;// dBm
   double x;
   double y;
+  double speed;
   std::string edge;
 }SignalMapItem;
 #endif 
