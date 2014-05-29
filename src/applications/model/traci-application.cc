@@ -140,7 +140,7 @@ namespace ns3
     traciClient ->commandGetVariablePosition2D (CMD_GET_VEHICLE_VARIABLE, VAR_POSITION, m_name, m_position);
     //std::cout<<" positio: "<< m_position.x <<" "<< m_position.y << std::endl;
     traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_ANGLE, m_name, m_angle);
-    traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, (*i), m_speed);
+    traciClient->CommandGetVariableDouble (CMD_GET_VEHICLE_VARIABLE, VAR_SPEED, m_name, m_speed);
     mac->SetAngle (m_angle );
     mac->SetPosition (m_position.x, m_position.y);
     if ( m_edge.empty () == false)

@@ -47,7 +47,7 @@ namespace ns3{
       std::string m_name;
       std::string m_edge;
       double m_maxSpeed;
-      float m_speed;
+      double m_speed;
       EventId m_nextEventId;
       Position2D m_position;
       double m_angle;

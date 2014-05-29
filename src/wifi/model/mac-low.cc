@@ -2408,7 +2408,7 @@ rxPacket:
       SetChannelNumber (CONTROL_CHANNEL);
       Simulator::Schedule (m_phy->GetObject<YansWifiPhy> ()->GetSwitchingDelay (),  
           &MacLow::ScheduleControlSignalTransmission, this);
-      int64_t scheduleDelay = 1249; // Need To Test How Many MicroSeconds It Will Take
+      int64_t scheduleDelay = SCHEDULE_DELAY; // Need To Test How Many MicroSeconds It Will Take
        m_setChannelEvent = Simulator::Schedule (MicroSeconds (scheduleDelay), &MacLow::SetChannelNumber, this, DATA_CHANNEL);
     }
   }

@@ -411,6 +411,13 @@ switchChannel:
       //std::cout<<" m_edThreshold: "<< WToDbm (m_edThresholdW) << std::endl; // -96 dBm
       rxPowerDbm += m_rxGainDb;
 
+      /*
+      if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && GetChannelNumber () == DATA_CHANNEL )
+      {
+        std::cout<<" is receiving" << std::endl;
+      }
+      */
+      //std::cout<<" is receiving" << std::endl;
 
       //-------Add rxPower in payload
       WifiMacHeader _hdr;
@@ -453,6 +460,7 @@ switchChannel:
       double rxPowerW = DbmToW (rxPowerDbm);
       Time rxDuration = CalculateTxDuration (packet->GetSize (), txMode, preamble);
       Time endRx = Simulator::Now () + rxDuration;
+      //std::cout<<" rxDuration: "<< rxDuration << std::endl;
 
       Ptr<InterferenceHelper::Event> event;
       event = m_interference.Add (packet->GetSize (),
@@ -822,11 +830,14 @@ maybeCcaBusy:
     YansWifiPhy::EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> event)
     {
       NS_LOG_FUNCTION (this << packet << event);
+
+        //std::cout<<" is ending receive procedure" << std::endl;
       if ( m_self.GetNodeId () == 0 || m_state == 0)
       {
         //std::cout<<" address is receiving " << m_self.GetNodeId () <<" m_self is: "<< m_self<< " m_state: "<< m_state<< std::endl;
         return;
       }
+
       //std::cout<<" is receiving" << std::endl;
       //NS_ASSERT (IsStateRx ());
       

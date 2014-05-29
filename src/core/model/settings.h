@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
-const uint32_t DEFAULT_PACKET_LENGTH = 500;
+const uint32_t DEFAULT_PACKET_LENGTH = 1500;
 const uint32_t DEFAULT_WIFI_DEVICE_INDEX = 0;
 const double DEFAULT_EXCLUSION_REGION = -90.4397; //dbm
 const double DEFAULT_EXCLUSION_REGION_WATT = 9.0371e-13;//Watt
@@ -28,7 +28,7 @@ const double PATH_LOSS_EXPONENT = 3.28;
 
 const uint32_t MAX_RANDOM_SEED = 100;
 const uint32_t MAX_RUN_NUMBER = 200;
-const int64_t SLOT_LENGTH = 1500; //in terms of micro seconds
+const int64_t SLOT_LENGTH = 3000; //in terms of micro seconds
 const uint32_t FRAME_LENGTH = 100; //slot
 
 const uint16_t _FROM = 2;
@@ -46,5 +46,6 @@ const double ABSOLUTE_NI_THRESHOLD = 1.0e-09;
 const int64_t DATA_INTERFERENCE_SAMPLE_INTERVAL=20; //microseconds
 const int64_t SLOT_OFFSET_FOR_FUTURE_CALCULATION = 30;
 const double EWMA_PDR_PROTECTION_THRESHOLD = 0.04; // this if for exclusion region shrink 
+const int64_t SCHEDULE_DELAY = 2749;
 
 #endif

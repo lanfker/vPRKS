@@ -5,6 +5,7 @@
 #include <set>
 #include <cmath>
 
+const double PI = 3.14159265;
 NS_LOG_COMPONENT_DEFINE ("SignalMap");
 
 namespace ns3
@@ -41,7 +42,7 @@ namespace ns3
         it->angle = item.angle;
         if ( self == false) // position estimation
         {
-          double timeElapsed = (item.timeStamp - it->timeStamp).GetSecods ();
+          double timeElapsed = (item.timeStamp - it->timeStamp).GetSeconds ();
           it->y = it->y + (timeElapsed * item.speed ) * cos (item.angle * PI/180.0);
           it->x = it->x + (timeElapsed * item.speed ) * sin (item.angle * PI/180.0);
         }
