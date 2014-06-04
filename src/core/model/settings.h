@@ -25,6 +25,7 @@ const uint32_t DATA_CHANNEL = 1;
 const uint32_t CONTROL_CHANNEL = 2;
 const double DELIVERY_100_SNR = 14; //dB
 const double PATH_LOSS_EXPONENT = 3.28;
+const uint32_t MAX_VEHICLE_COUNT = 10000;
 
 const uint32_t MAX_RANDOM_SEED = 100;
 const uint32_t MAX_RUN_NUMBER = 200;

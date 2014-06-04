@@ -148,6 +148,9 @@ public:
   double GetPowerDbm (uint8_t power) const;
 
   double SetAddress (Mac48Address ad);
+
+  double DbmToW (double dbm) const;
+  double WToDbm (double w) const;
 private:
   YansWifiPhy (const YansWifiPhy &o);
   virtual void DoDispose (void);
@@ -160,9 +163,7 @@ private:
   void Configure80211p_CCH (void);
   void Configure80211p_SCH (void);
   double GetEdThresholdW (void) const;
-  double DbmToW (double dbm) const;
   double DbToRatio (double db) const;
-  double WToDbm (double w) const;
   double RatioToDb (double ratio) const;
   void EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> event);
 

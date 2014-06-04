@@ -2526,17 +2526,20 @@ rxPacket:
     return _vec;
   }
 
-  void MacLow::GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, std::vector<uint16_t> &vec)
+  void MacLow::GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, uint16_t arr[])
   {
     std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (node); // get receiver signal map
     for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
     {
       double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
+      rxPower = m_phy->GetObject<YansWifiPhy> ()->DbmToW (rxPower);
+      //std::cout<<" rxPower: "<< rxPower << " exclusionRegion: "<< exclusionRegion << std::endl;
       if ( rxPower >= exclusionRegion)
       {
-        vec.push_back (it->from);
+        arr[it->from] = it->from;
       }
     }
+    //std::cout<<" vec.size: "<< vec.size () << std::endl;
   }
 
   bool MacLow::CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor)
@@ -2559,28 +2562,19 @@ rxPacket:
       std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (*it); // get receiver signal map
 
       double exclusionRegion = m_exclusionRegionHelper.GetExclusionRegion (sender, *it);
-      std::vector<uint16_t> nodesInExclusionRegion;
+      uint16_t nodesInExclusionRegion[MAX_VEHICLE_COUNT];
+      std::fill_n (nodesInExclusionRegion, MAX_VEHICLE_COUNT, 0);
       GetNodesInExclusionRegion ( *it, exclusionRegion, nodesInExclusionRegion); // find out who are in Exclusion Region
+      /*
       if ( find (nodesInExclusionRegion.begin (), nodesInExclusionRegion.end (), neighbor) != nodesInExclusionRegion.end ())
       {
         return true;
       }
-      /*
-      for (std::vector<SignalMapItem>::iterator _it = signalMap.begin (); _it != signalMap.end (); ++ _it)
-      {
-        if ( _it->from == sender && _it->to == *it)
-        {
-          double exclusionRegion = _it->exclusionRegion; // the link Exclusion region is found.
-          // need a method to fetch nodes in exclusion region. 
-          std::vector<uint16_t> nodesInExclusionRegion;
-          GetNodesInExclusionRegion ( *it, exclusionRegion, nodesInExclusionRegion); // find out who are in Exclusion Region
-          if ( find (nodesInExclusionRegion.begin (), nodesInExclusionRegion.end (), neighbor) != nodesInExclusionRegion.end ())
-          {
-            return true;
-          }
-        }
-      }
       */
+      if ( nodesInExclusionRegion[neighbor] == neighbor)
+        return true;
+      else
+        return false;
     }
   }
 

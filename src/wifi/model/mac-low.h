@@ -544,7 +544,8 @@ public:
   void CollectConflictingNodes (std::vector<uint16_t> &vec);
   bool IsSelfMaximum (std::vector<uint16_t> conflictSet, int64_t slot);
   std::vector<RoadVehicleItem> CalculateLengthForDensityShare (std::vector<RoadVehicleItem> vec, uint32_t &count, uint32_t remainingBytes, uint32_t &totalBytes);
-  void GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, std::vector<uint16_t> &vec);
+  //arr should be a hash table with no conflicts
+  void GetNodesInExclusionRegion (uint16_t node, double exclusionRegion, uint16_t arr[]);
   bool CheckIfTwoNodesConflict (uint16_t sender, uint16_t neighbor);
   std::vector<uint16_t> CollectConflictNeighbors ();
   int64_t FindNextSendingSlot (std::vector<uint16_t> exclusionRegion);
