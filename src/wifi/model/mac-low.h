@@ -556,7 +556,7 @@ public:
   void UpdateSendingStatus (uint16_t node, int64_t slot);
   void GenerateControlPacket ();
   void SortSendingSlot ();
-  std::vector<NodeSendingStatus> GetFirstTwoNodeSendingSlot (int64_t currentSlot);
+  std::vector<NodeSendingStatus> GetNodesSendingSlot (int64_t currentSlot, uint32_t count);
 
   void PrintAddress ();
 

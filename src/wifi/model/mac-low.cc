@@ -730,43 +730,9 @@ namespace ns3 {
       uint32_t edgeLength = buff.ReadU8 ();
       std::string edge = buff.ReadString (edgeLength);
       m_signalMap.UpdateVehicleStatus (sender, angle, x, y, edge);
-      //std::cout<<hdr.GetAddr2 ().GetNodeId ()<<" x: "<< x <<" y: "<< y << std::endl;
-      //std::cout<<"sender: "<< hdr.GetAddr2 ().GetNodeId () << " receiver: "<< m_self.GetNodeId () <<" dist: "<< sqrt (pow (m_positionX - x,2) + pow (m_positionY - y, 2)) <<" atten: "<< txPower - rxPower <<std::endl;
-      /*
-      if ( Simulator::Now () > Seconds (START_PROCESS_TIME ) && (m_phy->GetChannelNumber () == DATA_CHANNEL ))
-      {
-        std::cout<<m_self.GetNodeId () << " is receiving" << std::endl;
-      }
-      else if ( Simulator::Now () > Seconds (START_PROCESS_TIME ) && (m_phy->GetChannelNumber () == CONTROL_CHANNEL))
-      {
-        std::cout<<m_self.GetNodeId () << " in control channel, receiving with rxPower: "<< rxPower<< " txPower: "<< txPower << std::endl;
-      }
-      */
 
 
       //============================Read shared Density info==============================
-      /*
-      uint32_t densityCount = buff.ReadU8 ();
-      for (uint32_t i = 0; i < densityCount; ++ i)
-      {
-        uint32_t edgeIdSize = buff.ReadU8 ();
-        std::string edgeId = buff.ReadString (edgeIdSize);
-        double density = buff.ReadDouble ();
-      }
-      */
-
-
-      /*
-         ObservationItem obsItem;
-
-         obsItem.senderX = x;
-         obsItem.senderY = y;
-         obsItem.receiverX =  position.x;
-         obsItem.receiverY =  position.y;
-         obsItem.averageAttenuation = txPower - rxPower;
-         obsItem.timeStamp = Simulator::Now ();
-         m_observation.AppendObservation (hdr.GetAddr2 ().GetNodeId (), m_self.GetNodeId (), obsItem);
-         */
 
       //==============================Signal Map Sample==============================================
       SignalMapItem signalMapItem;
@@ -1736,10 +1702,8 @@ rxPacket:
       m_currentHdr.SetDuration (duration);
       if (m_phy->GetChannelNumber () == DATA_CHANNEL )
       {
-        //std::cout<<m_self.GetNodeId () <<" sending sequence number: "<< m_sequenceNumber << std::endl;
         m_currentHdr.SetSequenceNumber (m_sequenceNumber); // set sequence number for packets at data channel.
         m_sequenceNumber ++ ;
-        //std::cout<<m_self.GetNodeId () <<" seq_next: "<< m_sequenceNumber << std::endl;
       }
 
       //---------Add txPower---------------------------------------
@@ -1749,7 +1713,6 @@ rxPacket:
       uint8_t txPowerLevel = 0;//default tx Power level
       buff.WriteDouble (m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (txPowerLevel) + TX_GAIN);
 
-      //std::cout<<" encoded: "<< m_phy->GetObject<YansWifiPhy> () ->GetPowerDbm (0) << std::endl;
       buff.ReadDoubles (4); //rxpower, angle, pos.x, pos.y
       buff.WriteU8 ((uint8_t)m_edge.size ());
       buff.WriteString (m_edge);
@@ -1757,7 +1720,7 @@ rxPacket:
       //std::cout<<m_self.GetNodeId () <<" send: sending slot: "<< m_nextSendingSlot << std::endl;
       buff.WriteU64 (m_nextSendingSlot);
       SortSendingSlot ();
-      std::vector<NodeSendingStatus> vec = GetFirstTwoNodeSendingSlot (GetCurrentSlot ());
+      std::vector<NodeSendingStatus> vec = GetNodesSendingSlot (GetCurrentSlot (), 10);
       uint8_t size = (uint8_t)vec.size ();
       buff.WriteU8 (size);
       for (uint8_t i = 0; i < size; ++ i)
@@ -2330,7 +2293,18 @@ rxPacket:
     int64_t maxPriority = selfPriority;
     for (std::vector<uint16_t>::iterator it = conflictSet.begin (); it != conflictSet.end (); ++ it)
     {
-      if ( *it == m_self.GetNodeId ())
+      bool sendingInCurrentSlot = false;
+      for (std::vector<NodeSendingStatus>::iterator _it = m_nodesSendingStatus.begin (); _it != m_nodesSendingStatus.end (); ++ _it)
+      {
+        if (_it->nodeId == *it)
+        {
+          if ( _it->sendingSlot == slot)
+            sendingInCurrentSlot = true;
+          else if ( _it->sendingSlot < GetCurrentSlot ()) // not updated timely, we do not know the status of this neighbor, we should be conservative.
+            sendingInCurrentSlot = true;
+        }
+      }
+      if ( *it == m_self.GetNodeId () && sendingInCurrentSlot == false)
         continue;
       int64_t temp = CalculatePriority (*it, slot);
       if ( temp > maxPriority)
@@ -2345,9 +2319,6 @@ rxPacket:
 
   void MacLow::CalculateSchedule ()
   {
-    //std::cout<<" m_neighborSignalMaps.size (): "<<m_neighborSignalMaps.size () << std::endl;
-    //std::cout<<" m_nodesSendingStatus.size (): "<< m_nodesSendingStatus.size () << std::endl;
-    //std::cout<<" trying to calculate a schedule "<< std::endl;
     //==================Update Node Status========================================
     NodeStatus status;
     status.nodeId = m_self.GetNodeId ();
@@ -2357,14 +2328,10 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
-    NodeSendingStatus sendingStatus;
-    sendingStatus.nodeId = m_self.GetNodeId ();
-    sendingStatus.sendingSlot = m_nextSendingSlot;
     //If m_nextSendingSlot is always the same, the add method will simply locate the record and return.
     //If the current slot equals to m_nextSendingSlot, in Simulator, the value would still be the current slot. 
     //This is convenient for us to check if a receiver should be in the data plane while it is not.
     //std::cout<<m_self.GetNodeId () <<" "<< Simulator::Now ()<<" Simulator, add sending status: "<< " nodeid: "<< sendingStatus.nodeId <<" slot: "<< sendingStatus.sendingSlot << std::endl;
-    Simulator::AddSendingNode (sendingStatus);
 
     //=====================First Check If I Can Send Packets===========================
     std::vector<uint16_t> unitedExclusionRegion;
@@ -2473,6 +2440,7 @@ rxPacket:
   {
     std::vector<SignalMapItem> signalMap = Simulator::GetSignalMap (m_self.GetNodeId ());
     std::vector<uint16_t> receivers;
+    // Find receiver set first
     for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
     {
       double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
@@ -2481,7 +2449,6 @@ rxPacket:
         receivers.push_back (it->from); // since its deterministic channel, we can do this
       }  
     }
-    //std::cout<<" receivers vector size: "<< receivers.size ()<< std::endl;
     // neighbors of recievers should be considered. not neighbors of the sender
     for (std::vector<uint16_t>::iterator it = receivers.begin (); it != receivers.end (); ++ it)
     {
@@ -2723,12 +2690,11 @@ rxPacket:
     sort (m_nodesSendingStatus.begin (), m_nodesSendingStatus.end (), SendSlotCompare);
   }
 
-  std::vector<NodeSendingStatus> MacLow::GetFirstTwoNodeSendingSlot (int64_t currentSlot)
+  std::vector<NodeSendingStatus> MacLow::GetNodesSendingSlot (int64_t currentSlot, uint32_t count)
   {
     std::vector<NodeSendingStatus> vec;
     for (std::vector<NodeSendingStatus>::iterator it = m_nodesSendingStatus.begin (); it != m_nodesSendingStatus.end (); ++ it)
     {
-      //std::cout<<m_self.GetNodeId ()<<" nodeid: "<< it->nodeId <<" sendingslot: "<< it->sendingSlot << std::endl;
       if ( it->sendingSlot <= currentSlot)
       {
         continue;
@@ -2737,7 +2703,7 @@ rxPacket:
         //slot condition is met. need to check distance to sender.
       {
         vec.push_back (*it);
-        if (vec.size () == 2)
+        if (vec.size () == 10)
           return vec;
       }
     }
