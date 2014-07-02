@@ -863,6 +863,13 @@ maybeCcaBusy:
       }
       else
       {
+
+        if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && GetChannelNumber () == DATA_CHANNEL)
+        {
+          WifiMacHeader hdr;
+          packet->PeekHeader (hdr);
+          std::cout<<Simulator::Now () <<" node: "<< m_self.GetNodeId () << " MISSED a packet from: " << hdr.GetAddr2 ().GetNodeId () <<" sequence number is: "<< hdr.GetSequenceNumber () << std::endl;
+        }
         //std::cout<<" packet reception failure" << std::endl;
         /* failure. */
         NotifyRxDrop (packet);

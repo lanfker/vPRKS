@@ -566,6 +566,7 @@ private:
   SignalMap m_signalMap;
   LinkEstimator m_linkEstimator;
   Observation m_observation;
+  int64_t m_activeSlot;
   double m_txPower;
   int64_t m_currentSlot;
   int64_t m_nextSendingSlot;

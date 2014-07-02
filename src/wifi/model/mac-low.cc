@@ -386,6 +386,7 @@ namespace ns3 {
     m_currentSlot = 0;
     m_angle = 0;
     m_nextSendingSlot = 0;
+    m_activeSlot = 0;
     // Update slot number when it should be incremented
     Simulator::Schedule (MicroSeconds (SLOT_LENGTH), &MacLow::GetCurrentSlot, this);
     //Simulator::Schedule (Seconds (50), &MacLow::PrintAddress, this);
@@ -731,9 +732,6 @@ namespace ns3 {
       std::string edge = buff.ReadString (edgeLength);
       m_signalMap.UpdateVehicleStatus (sender, angle, x, y, edge);
 
-
-      //============================Read shared Density info==============================
-
       //==============================Signal Map Sample==============================================
       SignalMapItem signalMapItem;
       signalMapItem.selfx = m_positionX;
@@ -747,6 +745,7 @@ namespace ns3 {
       signalMapItem.y = y;
       signalMapItem.edge = edge;
       m_signalMap.AddOrUpdate (signalMapItem);
+      //std::cout<<" signal map from: "<< hdr.GetAddr2 ().GetNodeId () <<" to: "<< m_self.GetNodeId () << " created, size: "<< m_signalMap.GetSignalMap ().size ()<< std::endl;
       // Here, we also fake signal map for now. Will update later.
       Simulator::UpdateSignalMap (m_self.GetNodeId (), m_signalMap.GetSignalMap ());
       //Simulator::PrintSignalMaps(m_self.GetNodeId ());
@@ -971,7 +970,7 @@ namespace ns3 {
       { 
 
         if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == DATA_CHANNEL)
-          std::cout<<Simulator::Now () <<" node: "<< m_self.GetNodeId () << " received a packet from: " << hdr.GetAddr2 ().GetNodeId () << std::endl;
+          std::cout<<Simulator::Now () <<" node: "<< m_self.GetNodeId () << " received a packet from: " << hdr.GetAddr2 ().GetNodeId () <<" sequence number is: "<< hdr.GetSequenceNumber () << std::endl;
         int64_t receivedNextSendingSlot = buff.ReadU64 ();
         //std::cout<<m_self.GetNodeId () <<" received sending slot: " << receivedNextSendingSlot <<" from "<< hdr.GetAddr2 ().GetNodeId ()<< std::endl;
 
@@ -1656,13 +1655,21 @@ rxPacket:
         return;
       }
       if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == DATA_CHANNEL)
-        std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<< " is sending "<< std::endl;
+      {
+        std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<< " is sending current slot is: "<< GetCurrentSlot () <<std::endl;
+      }
+      else if ( Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == CONTROL_CHANNEL)
+      {
+        std::cout<<Simulator::Now () <<" "<<m_self.GetNodeId ()<< " is sending in CONTROL plane " << std::endl;
+      }
       /* send this packet directly. No RTS is needed. */
       StartDataTxTimers ();
+      /*
       if (Simulator::Now () > Seconds (START_PROCESS_TIME) && m_phy->GetChannelNumber () == DATA_CHANNEL)
       {
         Simulator::PrintReceivers (m_self.GetNodeId () );
       }
+      */
 
       WifiMode dataTxMode = GetDataTxMode (m_currentPacket, &m_currentHdr);
       Time duration = Seconds (0.0);
@@ -1760,6 +1767,10 @@ rxPacket:
       status.y = m_positionY;
       Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
       //Simulator::PrintNodeStatus (m_self.GetNodeId ());
+      NodeSendingStatus sendingStatus;
+      sendingStatus.nodeId = m_self.GetNodeId ();
+      sendingStatus.sendingSlot = GetCurrentSlot ();
+      Simulator::AddSendingNode (sendingStatus);
 
 
       m_currentPacket = Create<Packet> (payload, DEFAULT_PACKET_LENGTH);
@@ -2328,6 +2339,10 @@ rxPacket:
     status.x = m_positionX;
     status.y = m_positionY;
     Simulator::UpdateNodeStatus (m_self.GetNodeId (), status);
+    if (m_ackTimeout == 0)
+    {
+      m_activeSlot = GetCurrentSlot () + LEARNING_TIMESLOT;
+    }
     //If m_nextSendingSlot is always the same, the add method will simply locate the record and return.
     //If the current slot equals to m_nextSendingSlot, in Simulator, the value would still be the current slot. 
     //This is convenient for us to check if a receiver should be in the data plane while it is not.
@@ -2655,8 +2670,10 @@ rxPacket:
     //Assuming Symmetric Channel Attenuation For Now.
     bool returnValue=false;
     std::vector<SignalMapItem> signalMap= Simulator::GetSignalMap (m_self.GetNodeId ());
+    //std::cout<<"self: "<< m_self.GetNodeId () <<" signalmapsize: "<< signalMap.size () << std::endl;
     std::vector<uint16_t> senders;
     //Find out who are the receivers first.
+    //std::cout<<"self: "<< m_self.GetNodeId ()<<" senders: ";
     for (std::vector<SignalMapItem>::iterator it = signalMap.begin (); it != signalMap.end (); ++ it)
     {
       double rxPower = DEFAULT_POWER + TX_GAIN - it->attenuation;
@@ -2664,22 +2681,43 @@ rxPacket:
       if ( rxPower >= LINK_SELECTION_THRESHOLD)
       {
         senders.push_back (it->from);
+        //std::cout<<it->from <<" ";
         //std::cout<<" been viewed as sender "<< std::endl;
       }
     }
+
+    if (signalMap.size () < MINIMUM_SIGNAL_MAP_RECORD || GetCurrentSlot () < m_activeSlot )
+    {
+      return true; // stay in data plane
+    }
+    //std::cout<<std::endl;
+    // step1: collect the sender set
+    // step2: check if any element of the sender set has the sendingslot infor equal or less than the current timeslot
     for (std::vector<uint16_t>::iterator it = senders.begin (); it != senders.end (); ++ it)
     {
       //std::cout<<" m_nodesSendingStatus.size: "<<m_nodesSendingStatus.size ()<< std::endl;
+      bool found = false;
       for (std::vector<NodeSendingStatus>::iterator _it = m_nodesSendingStatus.begin (); _it != m_nodesSendingStatus.end (); ++ _it)
       {
         if ( _it->nodeId == *it)
         {
+          found = true;
           //std::cout<<" sending slot: "<< _it->sendingSlot <<" current: "<< GetCurrentSlot ()<< std::endl;
-          if (_it->sendingSlot == GetCurrentSlot ())
+          if (_it->sendingSlot <= GetCurrentSlot ()) // less than or equal, CONSERVATIVE.
           {
             return true;
           }
+          else
+          {
+            break;
+          }
         }
+      }
+      // if found is still false, this means the there is no record for the current sender, 
+      // in this case, we let the current node in the data plane. CONSERVATIVE
+      if (found == false)
+      {
+        return true;
       }
     }
     return false;
@@ -2688,6 +2726,12 @@ rxPacket:
   void MacLow::SortSendingSlot ()
   {
     sort (m_nodesSendingStatus.begin (), m_nodesSendingStatus.end (), SendSlotCompare);
+    /*
+    for (std::vector<NodeSendingStatus>::iterator it = m_nodesSendingStatus.begin (); it != m_nodesSendingStatus.end (); ++ it)
+    {
+      std::cout<<" self: "<< m_self.GetNodeId ()<<" nodeId: "<< it->nodeId <<" sending slot: "<< it->sendingSlot << std::endl;
+    }
+    */
   }
 
   std::vector<NodeSendingStatus> MacLow::GetNodesSendingSlot (int64_t currentSlot, uint32_t count)

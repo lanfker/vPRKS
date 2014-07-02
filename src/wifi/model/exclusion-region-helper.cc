@@ -81,6 +81,11 @@ namespace ns3
             std::cout<<" offset: "<< offset <<" collectionsize: "<< signalMap.GetSignalMap ().size ()<< std::endl;
             */
 
+          if ( signalMap.end () - signalMap.begin () == offset + 1)
+          {
+            std::cout<<" offset reaches the last element, return "<< std::endl;
+            return it->currentExclusionRegion;
+          }
           double interferenceSum = 0;
           for (SignalMap::Iterator _it = signalMap.begin () + offset + 1; _it != signalMap.end (); ++ _it)
           {
@@ -98,7 +103,7 @@ namespace ns3
           // if we used all the signal map records, yet we still cannot satisfy the delta interference requirement,
           // we use the last item in the signal map as  current exlusion region
           double lastElementInterferenceW = DbmToW ( txPower - (signalMap.end () - 1) -> attenuation );
-          if ( lastElementInterferenceW < it->currentExclusionRegion)
+          if ( lastElementInterferenceW <= it->currentExclusionRegion)
           {
             std::cout<<" used all, but cannot satisfy deltainterference requirement "<< std::endl;
 
