@@ -1,0 +1,17 @@
+<images>
+     <image>
+          <type>ZFILESYSTEM</type>
+          <signature>fb08e93de596fbf21d82f0b9cc113355464866e6</signature>
+          <url>https://www.dropbox.com/s/gkt9iuf0ne4ooh8/vPRKS.tgz</url>
+     </image>
+     <image>
+          <type>KERNEL</type>
+          <signature>6c247bbe3bc9f661906147ec46f06e57279c91bf</signature>
+          <url>https://www.dropbox.com/s/d45juorkl7t1m5i/vmlinuz-3.2.0-76-virtual</url>
+     </image>
+     <image>
+          <type>RAMDISK</type>
+          <signature>637f10f22da55a8fe657183aa76afe08d347f823</signature>
+          <url>https://www.dropbox.com/s/bqk0nt2a6aotgjf/initrd.img-3.2.0-76-virtual</url>
+     </image>
+</images>
